@@ -85,9 +85,6 @@ func ValidateRepo(option, repo string) error {
 
 // ValidateToken checks if a GitHub token is valid.
 func ValidateToken(option, token string) error {
-	if len(token) != 40 {
-		return errors.Errorf("the GitHub token (--%s) must be 40 characters long, got %d", option, len(token))
-	}
 	if _, err := hex.DecodeString(token); err != nil {
 		return errors.Wrapf(err, "cannot parse the GitHub token (--%s)", option)
 	}
