@@ -71,19 +71,19 @@ func main() {
 	_, _, err := process(&d)
 	if err != nil {
 		// Handle non-fatal errors.
-		if _, ok := err.(releaseBranchError); ok {
+		switch err.(type) {
+		case *releaseBranchError:
 			pkg.Errorf(err.Error())
 			goto done
-		}
-		if _, ok := err.(fastForwardWindowError); ok {
+		case *fastForwardWindowError:
 			pkg.Errorf(err.Error())
 			goto done
-		}
-		if _, ok := err.(identicalBranchesError); ok {
+		case *identicalBranchesError:
 			pkg.Errorf(err.Error())
 			goto done
+		default:
+			pkg.PrintErrorAndExit(err)
 		}
-		pkg.PrintErrorAndExit(err)
 	}
 done:
 	pkg.Logf("done!")
