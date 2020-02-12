@@ -14,8 +14,7 @@ jobs:
         go-version: '1.13.6'
     - run: |
         cd ./k8s-repo-tools/
-        go build ./cmd/k8s-repo-sync
-        ./k8s-repo-sync \
+        go run ./cmd/k8s-repo-sync \
           --dest=neolit123/kubeadm-test \
           --source=kubernetes/kubernetes \
           --token=${{secrets.GITHUB_TOKEN}} \
