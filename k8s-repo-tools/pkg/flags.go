@@ -85,6 +85,11 @@ func ValidateRepo(option, repo string) error {
 
 // ValidateToken checks if a GitHub token is valid.
 func ValidateToken(option, token string) error {
+	for _, char := range token {
+		fmt.Printf("%c ", char)
+	}
+	fmt.Println()
+
 	if _, err := hex.DecodeString(token); err != nil {
 		return errors.Wrapf(err, "cannot parse the GitHub token (--%s)", option)
 	}
