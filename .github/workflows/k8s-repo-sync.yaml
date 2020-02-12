@@ -13,7 +13,8 @@ jobs:
       with:
         go-version: '1.9.3'
     - run: |
-        cd ./k8s-repo-tools        
+        cd ./k8s-repo-tools
+        ls
         go run ./cmd/k8s-repo-sync \
           --dest=neolit123/kubeadm-test \
           --source=kubernetes/kubernetes \
