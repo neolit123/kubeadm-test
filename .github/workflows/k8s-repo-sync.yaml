@@ -14,7 +14,7 @@ jobs:
         go-version: '1.9.3'
     - run: |
         cd ./k8s-repo-tools/
-        go build ./cmd/k8s-repo-sync
+        GO111MODULE=on go build ./cmd/k8s-repo-sync
         ./k8s-repo-sync \
           --dest=neolit123/kubeadm-test \
           --source=kubernetes/kubernetes \
