@@ -42,6 +42,15 @@ func TestValidateData(t *testing.T) {
 			},
 		},
 		{
+			name: "valid: valid fields and version prefixed token",
+			data: &pkg.Data{
+				MinVersion: "v1.17.0",
+				Token:      "v1." + validToken,
+				Source:     "org/src",
+				Dest:       "org/dest",
+			},
+		},
+		{
 			name: "invalid: empty string arguments",
 			data: &pkg.Data{
 				MinVersion: "",

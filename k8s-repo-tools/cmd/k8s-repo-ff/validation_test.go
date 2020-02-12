@@ -40,6 +40,13 @@ func TestValidateData(t *testing.T) {
 			},
 		},
 		{
+			name: "valid: valid fields and version prefixed token",
+			data: &pkg.Data{
+				Token: "v1." + validToken,
+				Dest:  "org/dest",
+			},
+		},
+		{
 			name: "invalid: empty string arguments",
 			data: &pkg.Data{
 				Token: "",

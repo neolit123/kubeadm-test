@@ -17,7 +17,6 @@ limitations under the License.
 package pkg
 
 import (
-	"encoding/hex"
 	"flag"
 	"fmt"
 	"regexp"
@@ -85,8 +84,11 @@ func ValidateRepo(option, repo string) error {
 
 // ValidateToken checks if a GitHub token is valid.
 func ValidateToken(option, token string) error {
-	if _, err := hex.DecodeString(token); err != nil {
-		return errors.Wrapf(err, "cannot parse the GitHub token (--%s)", option)
+	const tokenFormat = `(v[0-9]\.)?[0-9a-f]{40}`
+	var regexpTokenFormat = regexp.MustCompile(tokenFormat)
+	if !regexpTokenFormat.MatchString(token) {
+		return errors.Errorf("the option %q must be a 40 character HEX string "+
+			"with an optional version prefix: %s", option, tokenFormat)
 	}
 	return nil
 }
