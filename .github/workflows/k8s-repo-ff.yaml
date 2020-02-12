@@ -1,5 +1,7 @@
 name: k8s-repo-ff
 on:
+  repository_dispatch:
+    types: manual_trigger_repo_ff
   schedule:
     - cron: '0 11 * * *'
 jobs:
