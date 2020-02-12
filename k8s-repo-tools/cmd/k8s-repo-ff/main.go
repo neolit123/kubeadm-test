@@ -74,17 +74,13 @@ func main() {
 		switch err.(type) {
 		case *releaseBranchError:
 			pkg.Errorf(err.Error())
-			goto done
 		case *fastForwardWindowError:
 			pkg.Errorf(err.Error())
-			goto done
 		case *identicalBranchesError:
 			pkg.Errorf(err.Error())
-			goto done
 		default:
 			pkg.PrintErrorAndExit(err)
 		}
 	}
-done:
 	pkg.Logf("done!")
 }
