@@ -17,7 +17,7 @@ jobs:
         go run ./cmd/k8s-repo-sync \
           --dest=neolit123/kubeadm-test \
           --source=kubernetes/kubernetes \
-          --token=${{secrets.GITHUB_TOKEN}} \
+          --token=${{ secrets.GITHUB_TOKEN }} \
           --min-version=v1.18.0-alpha.3 \
           --dry-run=false \
           --force=true
