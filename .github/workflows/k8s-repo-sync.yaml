@@ -1,5 +1,7 @@
 name: k8s-repo-sync
 on:
+  repository_dispatch:
+    types: manual_trigger_repo_sync
   schedule:
     - cron: '*/5 * * * *'
 jobs:
