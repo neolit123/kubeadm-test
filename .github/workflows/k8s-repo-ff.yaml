@@ -16,6 +16,6 @@ jobs:
         cd ./k8s-repo-tools        
         go run ./cmd/k8s-repo-ff \
           --dest=neolit123/kubeadm-test \
-          --token=${{secrets.GITHUB_TOKEN}} \
+          --token=${{ secrets.GITHUB_TOKEN }} \
           --dry-run=false \
           --force=true
