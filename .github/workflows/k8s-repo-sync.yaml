@@ -20,4 +20,9 @@ jobs:
           --token=${{ secrets.GITHUB_TOKEN }} \
           --min-version=v1.18.0-alpha.3 \
           --dry-run=false \
-          --force=true
+          --force=true \
+          --output=./output.json
+    - uses: actions/upload-artifact@v1
+      with:
+        name: output.json
+        path: ./output.json
