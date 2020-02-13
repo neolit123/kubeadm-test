@@ -39,39 +39,39 @@ note left of client: find latest versioned branch
 note left of client: find latest versioned tag for that branch
 note left of client: determine if appropriate to FF
 dest->client: GET compare release branch to master
-client->dest: POST merge the HEAD of master into the release branch
+client->dest: POST merge master into the release branch
 note left of client: write the merge commit to disk
 -->
 
 ```
-+-------+                                     +---------+                                                  +-------+
-| user  |                                     | client  |                                                  | dest  |
-+-------+                                     +---------+                                                  +-------+
-    |                                              |                                                           |
-    | pass parameters                              |                                                           |
-    |--------------------------------------------->|                                                           |
-    |                                              |                                                           |
-    |                                              |                                       GET branches & tags |
-    |                                              |<----------------------------------------------------------|
-    |             -------------------------------\ |                                                           |
-    |             | find latest versioned branch |-|                                                           |
-    |             |------------------------------| |                                                           |
-    |--------------------------------------------\ |                                                           |
-    || find latest versioned tag for that branch |-|                                                           |
-    ||-------------------------------------------| |                                                           |
-    |           ---------------------------------\ |                                                           |
-    |           | determine if appropriate to FF |-|                                                           |
-    |           |--------------------------------| |                                                           |
-    |                                              |                                                           |
-    |                                              |                      GET compare release branch to master |
-    |                                              |<----------------------------------------------------------|
-    |                                              |                                                           |
-    |                                              | POST merge the HEAD of master into the release branch     |
-    |                                              |---------------------------------------------------------->|
-    |           ---------------------------------\ |                                                           |
-    |           | write the merge commit to disk |-|                                                           |
-    |           |--------------------------------| |                                                           |
-    |                                              |                                                           |
++-------+                                     +---------+                                      +-------+
+| user  |                                     | client  |                                      | dest  |
++-------+                                     +---------+                                      +-------+
+    |                                              |                                               |
+    | pass parameters                              |                                               |
+    |--------------------------------------------->|                                               |
+    |                                              |                                               |
+    |                                              |                           GET branches & tags |
+    |                                              |<----------------------------------------------|
+    |             -------------------------------\ |                                               |
+    |             | find latest versioned branch |-|                                               |
+    |             |------------------------------| |                                               |
+    |--------------------------------------------\ |                                               |
+    || find latest versioned tag for that branch |-|                                               |
+    ||-------------------------------------------| |                                               |
+    |           ---------------------------------\ |                                               |
+    |           | determine if appropriate to FF |-|                                               |
+    |           |--------------------------------| |                                               |
+    |                                              |                                               |
+    |                                              |          GET compare release branch to master |
+    |                                              |<----------------------------------------------|
+    |                                              |                                               |
+    |                                              | POST merge master into the release branch     |
+    |                                              |---------------------------------------------->|
+    |           ---------------------------------\ |                                               |
+    |           | write the merge commit to disk |-|                                               |
+    |           |--------------------------------| |                                               |
+    |                                              |                                               |
 ```
 
 ## The output format
