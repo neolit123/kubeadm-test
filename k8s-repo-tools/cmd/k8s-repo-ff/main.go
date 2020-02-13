@@ -26,7 +26,7 @@ import (
 
 func printUsage() {
 	out := os.Stderr
-	fmt.Fprintln(out, "k8s-repo-ff is a tool for fast forwarding a release branch\n"+
+	fmt.Fprintln(out, "k8s-repo-ff is a tool for fast-forwarding a release branch\n"+
 		"to the master branch of a GitHub repository")
 	fmt.Fprintln(out, "\nusage:")
 	fmt.Fprintf(out, "  k8s-repo-ff -dest=org/repo -token=<token> <options>\n\n")
@@ -50,6 +50,7 @@ func main() {
 		pkg.FlagTimeout,
 		pkg.FlagDryRun,
 		pkg.FlagForce,
+		pkg.FlagOutput,
 	}
 	pkg.SetupFlags(&d, flag.CommandLine, flagList)
 	flag.Parse()
@@ -68,17 +69,25 @@ func main() {
 
 	// Create an HTTP client and process the data.
 	pkg.NewClient(&d, nil)
-	_, _, err := process(&d)
+	ref, commit, err := process(&d)
 	if err != nil {
 		// Handle non-fatal errors.
 		switch err.(type) {
 		case *releaseBranchError:
-			pkg.Errorf(err.Error())
+			break
 		case *fastForwardWindowError:
-			pkg.Errorf(err.Error())
+			break
 		case *identicalBranchesError:
-			pkg.Errorf(err.Error())
+			break
 		default:
+			pkg.PrintErrorAndExit(err)
+		}
+		pkg.Errorf(err.Error())
+	}
+
+	// Write the output to disk.
+	if len(d.Output) != 0 {
+		if err := writeOutputToFile(d.Output, ref, commit, err); err != nil {
 			pkg.PrintErrorAndExit(err)
 		}
 	}

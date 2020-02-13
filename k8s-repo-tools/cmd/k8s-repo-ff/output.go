@@ -18,20 +18,28 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 
 	"github.com/google/go-github/v29/github"
 	"k8s.io/kubeadm/k8s-repo-tools/pkg"
 )
 
-// formatRefOutput marshals a list of Reference objects.
-func formatOutput(refs []*github.Reference, indent bool) ([]byte, error) {
+// output is the output structure.
+type output struct {
+	OutputError *string                  `json:"outputError"`
+	Reference   *github.Reference        `json:"reference"`
+	Commit      *github.RepositoryCommit `json:"commit"`
+}
+
+// formatOutput marshals the output to JSON.
+func formatOutput(out *output, indent bool) ([]byte, error) {
 	var buf []byte
 	var err error
 	if indent {
-		buf, err = json.MarshalIndent(refs, "", "\t")
+		buf, err = json.MarshalIndent(out, "", "\t")
 	} else {
-		buf, err = json.Marshal(refs)
+		buf, err = json.Marshal(out)
 	}
 	if err != nil {
 		return nil, err
@@ -39,15 +47,19 @@ func formatOutput(refs []*github.Reference, indent bool) ([]byte, error) {
 	return buf, nil
 }
 
-// writeOutputToFile writes the list of Reference objects to the
-// given filePath.
-func writeOutputToFile(filePath string, refs []*github.Reference) error {
-	buf, err := formatOutput(refs, true)
+// writeOutputToFile writes the output to the given filePath.
+func writeOutputToFile(filePath string, ref *github.Reference, commit *github.RepositoryCommit, outputError error) error {
+	out := &output{
+		OutputError: github.String(fmt.Sprintf("%+v", outputError)),
+		Reference:   ref,
+		Commit:      commit,
+	}
+	buf, err := formatOutput(out, true)
 	if err != nil {
 		return err
 	}
 
-	pkg.Logf("writing the resulted tags and branches to the file %q", filePath)
+	pkg.Logf("writing the resulted output to the file %q", filePath)
 	if err := ioutil.WriteFile(filePath, buf, 0600); err != nil {
 		return err
 	}

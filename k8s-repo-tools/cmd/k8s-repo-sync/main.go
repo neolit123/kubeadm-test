@@ -79,7 +79,7 @@ func main() {
 
 	// Write the output References to disk.
 	if len(d.Output) != 0 {
-		if err := writeRefOutputToFile(d.Output, refs); err != nil {
+		if err := writeOutputToFile(d.Output, refs); err != nil {
 			pkg.PrintErrorAndExit(err)
 		}
 	}

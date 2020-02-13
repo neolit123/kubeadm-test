@@ -13,14 +13,14 @@ k8s-repo-sync -dest=kubernetes/kubeadm -source=kubernetes/kubernetes \
 ```
 
 - See `-help` for all available options.
-- `-token` must hold a 40 character GitHub Personal Access Token.
+- `-token` must hold a valid GitHub Personal Access Token.
 - `-min-version` is required to filter branches and tags older than this version.
 - The tool assumes that branches are versioned and formated like `<prefix>[v]MAJOR.MINOR`.
 The prefix value can be controlled with the `-branch-prefix` flag.
-- `-output` writes a JSON file with the tags and branches that were written to
-the destination repository.
 - DRY-RUN mode for repositories is enabled by default. To disable it pass `-dry-run=false`.
+- `-output` writes a JSON file with the tags and branches that were written to
 - The `-output` file can still be written in DRY-RUN mode.
+the destination repository.
 
 ## Creating a GitHub PAT (Personal Access Token)
 

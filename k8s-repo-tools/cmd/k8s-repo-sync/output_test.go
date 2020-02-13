@@ -23,7 +23,7 @@ import (
 	"github.com/google/go-github/v29/github"
 )
 
-func TestFormatTagsAndBranchesOutput(t *testing.T) {
+func TestFormatOutput(t *testing.T) {
 	refs := []*github.Reference{
 		&github.Reference{Ref: github.String("/refs/tags/v1.16.0"), Object: &github.GitObject{SHA: github.String("123456780")}},
 		&github.Reference{Ref: github.String("/refs/tags/v1.17.0"), Object: &github.GitObject{SHA: github.String("123456780")}},
@@ -31,7 +31,7 @@ func TestFormatTagsAndBranchesOutput(t *testing.T) {
 		&github.Reference{Ref: github.String("/refs/heads/release-1.17"), Object: &github.GitObject{SHA: github.String("123456780")}},
 	}
 
-	out, err := formatRefOutput(refs)
+	out, err := formatOutput(refs, false)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
