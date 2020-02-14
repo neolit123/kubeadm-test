@@ -12,5 +12,4 @@ jobs:
       with:
         go-version: '1.13.6'
     - run: |
-        echo "hello world"
         echo "${{ GITHUB_SHA }} ${{ GITHUB_REF }}"
