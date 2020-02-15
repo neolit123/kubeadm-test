@@ -47,6 +47,13 @@ func SetLogWriters(out, err io.Writer) {
 	stderr = err
 }
 
+// GetLogWriters ...
+func GetLogWriters() (io.Writer, io.Writer) {
+	logMutex.Lock()
+	defer logMutex.Unlock()
+	return stdout, stderr
+}
+
 func getLogPrefix(t string, f string) string {
 	const layout = "15:04:05.000000"
 	_, fn, line, _ := runtime.Caller(2)
