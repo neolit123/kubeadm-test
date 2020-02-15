@@ -26,8 +26,7 @@ import (
 	"k8s.io/kubeadm/k8s-repo-tools/pkg"
 )
 
-// process is responsible for all operations that the application performs,
-// such as, getting references and writing new ones.
+// process is responsible for all operations that the application performs.
 func process(d *pkg.Data) (*github.Reference, *github.RepositoryCommit, error) {
 
 	pkg.Logf("using branch prefix %q", d.PrefixBranch)

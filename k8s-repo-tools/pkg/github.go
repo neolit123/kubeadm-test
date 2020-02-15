@@ -18,6 +18,8 @@ package pkg
 
 import (
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/google/go-github/v29/github"
@@ -161,4 +163,107 @@ func GitHubMergeBranch(d *Data, repo, base, head, commitMessage string) (*github
 	}
 	Logf("merging %q into %q for repository %q", head, base, repo)
 	return d.client.Repositories.Merge(ctx, ownerRepo[0], ownerRepo[1], &req)
+}
+
+// GitHubGetCreateRelease first checks if a tag exists and obtains a release from this tag.
+// If the tag is missing return an error. If the release is missing create it.
+func GitHubGetCreateRelease(d *Data, repo, tag string, body string) (*github.RepositoryRelease, error) {
+	ownerRepo := strings.Split(repo, "/")
+
+	Logf("checking if tag %q exists", tag)
+	ctx, cancel := d.CreateContext()
+	defer cancel()
+	_, _, err := d.client.Git.GetRef(ctx, ownerRepo[0], ownerRepo[1], "refs/tags/"+tag)
+	if err != nil {
+		return nil, err
+	}
+
+	Logf("getting release from tag %q", tag)
+	ctx, cancel = d.CreateContext()
+	defer cancel()
+	release, resp, err := d.client.Repositories.GetReleaseByTag(ctx, ownerRepo[0], ownerRepo[1], tag)
+	if resp.StatusCode != http.StatusNotFound {
+		return release, err
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	Logf("creating release for tag %q", tag)
+	ctx, cancel = d.CreateContext()
+	defer cancel()
+	rel := github.RepositoryRelease{
+		TagName:    github.String(tag),
+		Name:       github.String(tag),
+		Body:       github.String(body),
+		Draft:      github.Bool(false),
+		Prerelease: github.Bool(false),
+	}
+
+	release, resp, err = d.client.Repositories.CreateRelease(ctx, ownerRepo[0], ownerRepo[1], &rel)
+	if err != nil {
+		return nil, err
+	}
+
+	return release, err
+}
+
+// GitHubUploadReleaseAssets uploads files to a GitHub repository.
+func GitHubUploadReleaseAssets(d *Data, repo string, release *github.RepositoryRelease, files []string) error {
+	ownerRepo := strings.Split(repo, "/")
+	id := release.GetID()
+
+	// Get the existing list of assets.
+	Logf("checking for existing assets in release %q", release.GetTagName())
+	ctx, cancel := d.CreateContext()
+	defer cancel()
+	assets, _, err := d.client.Repositories.ListReleaseAssets(ctx, ownerRepo[0], ownerRepo[1],
+		id, &github.ListOptions{Page: 1, PerPage: 250})
+	if err != nil {
+		return err
+	}
+	Logf("found %d assets", len(assets))
+
+	// Only upload new files.
+	filesNew := []string{}
+	for _, f := range files {
+		exists := false
+		fBase := filepath.Base(f)
+		for _, a := range assets {
+			if fBase == a.GetName() {
+				exists = true
+				break
+			}
+		}
+		if exists {
+			Logf("skipping existing asset %q", fBase)
+			continue
+		}
+		filesNew = append(filesNew, f)
+	}
+
+	for _, f := range filesNew {
+		// Open the file.
+		file, err := os.Open(f)
+		if err != nil {
+			return err
+		}
+
+		opt := github.UploadOptions{
+			Name:      filepath.Base(f),
+			MediaType: "application/octet-stream",
+		}
+
+		// Upload the file as asset.
+		Logf("uploading asset %q", f)
+		ctx, cancel = d.CreateContext()
+		defer cancel()
+		_, _, err = d.client.Repositories.UploadReleaseAsset(ctx, ownerRepo[0], ownerRepo[1], id, &opt, file)
+		if err != nil {
+			file.Close()
+			return err
+		}
+		file.Close()
+	}
+	return nil
 }

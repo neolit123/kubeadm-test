@@ -37,15 +37,17 @@ const (
 // Data is the main data structure of the application.
 type Data struct {
 	// From flags
-	Dest         string
-	Source       string
-	MinVersion   string
-	Token        string
-	PrefixBranch string
-	Output       string
-	Timeout      time.Duration
-	DryRun       bool
-	Force        bool
+	Dest             string
+	Source           string
+	MinVersion       string
+	Token            string
+	PrefixBranch     string
+	Output           string
+	ReleaseTag       string
+	ReleaseNotesPath string
+	Timeout          time.Duration
+	DryRun           bool
+	Force            bool
 
 	// Dynamic fields
 	client    *github.Client

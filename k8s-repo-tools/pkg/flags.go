@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/util/version"
 )
 
 const (
@@ -44,6 +45,10 @@ const (
 	FlagForce = "force"
 	// FlagTimeout ...
 	FlagTimeout = "timeout"
+	// FlagReleaseTag ...
+	FlagReleaseTag = "release-tag"
+	// FlagReleaseNotesPath ...
+	FlagReleaseNotesPath = "release-notes-path"
 )
 
 // SetupFlags ...
@@ -68,6 +73,10 @@ func SetupFlags(d *Data, fs *flag.FlagSet, flags []string) {
 			fs.BoolVar(&d.DryRun, FlagDryRun, true, fmt.Sprintf("In %s mode repository writing operations are disabled", PrefixDryRun))
 		case FlagForce:
 			fs.BoolVar(&d.Force, FlagForce, false, "Skip the confirmation prompt before writing to the destination repository")
+		case FlagReleaseTag:
+			fs.StringVar(&d.ReleaseTag, FlagReleaseTag, "", "A SemVer tag from which to create a release")
+		case FlagReleaseNotesPath:
+			fs.StringVar(&d.ReleaseNotesPath, FlagReleaseNotesPath, "", "A path to a release notes file in markdown")
 		}
 	}
 }
@@ -97,6 +106,14 @@ func ValidateToken(option, token string) error {
 func ValidateEmptyOption(option, value string) error {
 	if len(value) == 0 {
 		return errors.Errorf("the option %q cannot be empty", option)
+	}
+	return nil
+}
+
+// ValidateReleaseTag validates if a tag is SemVer.
+func ValidateReleaseTag(option, value string) error {
+	if _, err := version.ParseSemantic(value); err != nil {
+		return err
 	}
 	return nil
 }
