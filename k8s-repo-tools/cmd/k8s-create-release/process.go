@@ -38,9 +38,13 @@ func process(d *pkg.Data) error {
 
 	// Handle release notes.
 	var err error
-	var bodyStr string
-	if len(d.ReleaseNotesToolPath) != 0 {
+	var outputPath, bodyStr string
 
+	// If a direct release notes path is given, do not generate them.
+	if len(d.ReleaseNotesPath) != 0 {
+		outputPath = d.ReleaseNotesPath
+	} else if len(d.ReleaseNotesToolPath) != 0 {
+		pkg.Logf("using %q as the release notes tool path", d.ReleaseNotesToolPath)
 		// Determine endSHA from the user supplied tag.
 		// TODO
 		endSHA := "TODO"
@@ -49,10 +53,20 @@ func process(d *pkg.Data) error {
 		// TODO
 		startSHA := "TODO"
 
-		bodyStr, err = runGenerateReleaseNotes(d, startSHA, endSHA)
+		outputPath, err = runGenerateReleaseNotes(d, startSHA, endSHA)
 		if err != nil {
 			return err
 		}
+	}
+
+	// Only load the release notes if the output path was defined.
+	if len(outputPath) != 0 {
+		pkg.Logf("reading the release notes from %q", outputPath)
+		body, err := ioutil.ReadFile(outputPath)
+		if err != nil {
+			return err
+		}
+		bodyStr = string(body)
 	}
 
 	// Create a release for this tag.
@@ -116,11 +130,5 @@ func runGenerateReleaseNotes(d *pkg.Data, startSHA, endSHA string) (string, erro
 		return "", err
 	}
 
-	// Read the results.
-	pkg.Logf("reading the release notes from  %q", outputPath)
-	str, err := ioutil.ReadFile(outputPath)
-	if err != nil {
-		return "", err
-	}
-	return string(str), nil
+	return outputPath, nil
 }

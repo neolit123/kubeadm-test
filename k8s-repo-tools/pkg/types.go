@@ -45,6 +45,7 @@ type Data struct {
 	Output               string
 	ReleaseTag           string
 	ReleaseNotesToolPath string
+	ReleaseNotesPath     string
 	Timeout              time.Duration
 	DryRun               bool
 	Force                bool

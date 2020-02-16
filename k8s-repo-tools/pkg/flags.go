@@ -49,6 +49,8 @@ const (
 	FlagReleaseTag = "release-tag"
 	// FlagReleaseNotesToolPath ...
 	FlagReleaseNotesToolPath = "release-notes-tool-path"
+	// FlagReleaseNotesPath ...
+	FlagReleaseNotesPath = "release-notes-path"
 )
 
 // SetupFlags ...
@@ -77,6 +79,8 @@ func SetupFlags(d *Data, fs *flag.FlagSet, flags []string) {
 			fs.StringVar(&d.ReleaseTag, FlagReleaseTag, "", "A SemVer tag from which to create a release")
 		case FlagReleaseNotesToolPath:
 			fs.StringVar(&d.ReleaseNotesToolPath, FlagReleaseNotesToolPath, "", "Path to the release notes tool binary")
+		case FlagReleaseNotesPath:
+			fs.StringVar(&d.ReleaseNotesPath, FlagReleaseNotesPath, "", fmt.Sprintf("Path to a text file containing release notes. Overrides the usage of %q", FlagReleaseNotesToolPath))
 		}
 	}
 }
