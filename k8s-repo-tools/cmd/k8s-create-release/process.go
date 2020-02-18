@@ -45,12 +45,14 @@ func process(d *pkg.Data) error {
 		outputPath = d.ReleaseNotesPath
 	} else if len(d.ReleaseNotesToolPath) != 0 {
 		pkg.Logf("using %q as the release notes tool path", d.ReleaseNotesToolPath)
-		// Determine endSHA from the user supplied tag.
-		// TODO
-		endSHA := "TODO"
 
-		// Determine startSHA:
-		// TODO
+		// TODO:
+		// - find the ref of the user tag (A)
+		// - list all repo tag refs (B)
+		// - use A and B for FindReleaseNotesSinceRef()
+		// - use the SHAs for runGenerateReleaseNotes()
+
+		endSHA := "TODO"
 		startSHA := "TODO"
 
 		outputPath, err = runGenerateReleaseNotes(d, startSHA, endSHA)

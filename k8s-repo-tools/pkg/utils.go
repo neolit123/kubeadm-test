@@ -227,3 +227,150 @@ func ShowPrompt(message string) (bool, error) {
 	}
 	return false, nil
 }
+
+// FindReleaseNotesSinceRef takes a k8s release SemVer tag and determines
+// the release SemVer tag which to use for a release notes range.
+// Note that nil can be returned even for err != nil.
+//
+// This logic needs to be adapted if the k8s release process changes.
+//
+// tag               | returned tag    | comment
+// -------------------------------------------------
+// v1.17.0-alpha.0   | v1.17.0-alpha.0 | no changelog
+// v1.17.0-alpha.1   | v1.16.0         | use previous minor
+// v1.17.0-<pre>     | v1.17.0-<pre-1> | previous pre-release
+// v1.17.0           | v1.16.0         | previous MINOR
+// v1.17.1           | v1.17.0         | previous PATCH
+//
+func FindReleaseNotesSinceRef(ref *github.Reference, refs []*github.Reference) (*github.Reference, error) {
+	var err error
+	ver, err := version.ParseSemantic(ref.GetRef())
+	if err != nil {
+		return nil, err
+	}
+
+	var result *github.Reference
+
+	// Not a pre-release.
+	if len(ver.PreRelease()) == 0 {
+		// Handle MINOR release.
+		if ver.Patch() == 0 {
+			major := int(ver.Major())
+			minor := int(ver.Minor()) - 1
+			// Handle MAJOR release.
+			if minor < 0 {
+				major--
+				if major < 0 {
+					goto exit
+				}
+				largest := version.MustParseSemantic(fmt.Sprintf("v%d.0.0", major))
+				result = findLargestMinorForMajorRef(largest, refs)
+			} else {
+				target := version.MustParseSemantic(fmt.Sprintf("v%d.%d.0", major, minor))
+				result = findExactVersionRef(target, refs)
+			}
+		} else {
+			// Handle PATCH release.
+			target := version.MustParseSemantic(ver.String()).WithPatch(ver.Patch() - 1)
+			result = findExactVersionRef(target, refs)
+		}
+	} else {
+		// Split the pre-release into "pre[0].pre[1]" e.g. "alpha.1".
+		// This format is guaranteed by the initial ParseSemantic() for "ver".
+		pre := strings.Split(ver.PreRelease(), ".")
+		// Handle alpha.0.
+		if pre[0] == "alpha" && pre[1] == "0" {
+			goto exit
+		}
+		// Handle alpha.1.
+		if pre[0] == "alpha" && pre[1] == "1" {
+			major := int(ver.Major())
+			minor := int(ver.Minor()) - 1
+			if minor < 0 {
+				major--
+				if major < 0 {
+					goto exit
+				}
+				largest := version.MustParseSemantic(fmt.Sprintf("v%d.0.0", major))
+				result = findLargestMinorForMajorRef(largest, refs)
+			} else {
+				target := version.MustParseSemantic(fmt.Sprintf("v%d.%d.0", major, minor))
+				result = findExactVersionRef(target, refs)
+			}
+			goto exit
+		}
+		// Handle other pre-releases.
+		// k8s does not have pre-releases for PATCH releases.
+		result = findPreviousPreRelease(ver, refs)
+	}
+exit:
+	if result == nil {
+		Warningf("could not find a release notes range reference for %v; returning the same reference", ref)
+		result = ref
+	}
+	return result, nil
+}
+
+func findLargestMinorForMajorRef(largest *version.Version, refs []*github.Reference) *github.Reference {
+	var result *github.Reference
+
+	for i := range refs {
+		tag := refs[i].GetRef()
+		tag = strings.TrimPrefix(tag, "refs/tags/")
+		if strings.Count(tag, ".") < 2 { // a version without a .PATCH component?
+			tag = tag + ".0"
+		}
+		ver, err := version.ParseSemantic(tag)
+		if err != nil {
+			Errorf("skipping ref %s: %v", refs[i], err)
+			continue
+		}
+		if largest.LessThan(ver) && largest.Major() == ver.Major() {
+			largest = ver
+			result = refs[i]
+		}
+	}
+	return result
+}
+
+func findExactVersionRef(target *version.Version, refs []*github.Reference) *github.Reference {
+	for i := range refs {
+		tag := refs[i].GetRef()
+		tag = strings.TrimPrefix(tag, "refs/tags/")
+		if strings.Count(tag, ".") < 2 { // a version without a .PATCH component?
+			tag = tag + ".0"
+		}
+		ver, err := version.ParseSemantic(tag)
+		if err != nil {
+			Errorf("skipping ref %s: %v", refs[i], err)
+			continue
+		}
+		if target.String() == ver.String() {
+			return refs[i]
+		}
+	}
+	return nil
+}
+
+func findPreviousPreRelease(target *version.Version, refs []*github.Reference) *github.Reference {
+	largest := version.MustParseSemantic("v0.0.0")
+	var result *github.Reference
+
+	for i := range refs {
+		tag := refs[i].GetRef()
+		tag = strings.TrimPrefix(tag, "refs/tags/")
+		if strings.Count(tag, ".") < 2 { // a version without a .PATCH component?
+			tag = tag + ".0"
+		}
+		ver, err := version.ParseSemantic(tag)
+		if err != nil {
+			Errorf("skipping ref %s: %v", refs[i], err)
+			continue
+		}
+		if largest.LessThan(ver) && ver.LessThan(target) {
+			largest = ver
+			result = refs[i]
+		}
+	}
+	return result
+}
