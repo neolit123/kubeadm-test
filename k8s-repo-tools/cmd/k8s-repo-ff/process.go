@@ -89,7 +89,7 @@ func process(d *pkg.Data) (*github.Reference, *github.RepositoryCommit, error) {
 		break
 	case "identical":
 		pkg.Logf("the branches %q and %q are identical", pkg.BranchMaster, latestBranch.GetRef())
-		return nil, nil, &identicalBranchesError{error: err}
+		return nil, nil, &identicalBranchesError{}
 	default:
 		return nil, nil, &genericError{error: errors.Errorf("got unhandled status %q comparing branches %q and %q. "+
 			"Please check the state of the repository!",
