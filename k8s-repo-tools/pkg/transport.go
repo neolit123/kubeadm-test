@@ -241,7 +241,7 @@ func NewMergeHandler(mergeRequest *github.RepositoryMergeRequest, status int, me
 		// Return an early error if methodErrors matches the Method of this http.Request.
 		if val, ok := methodErrors[req.Method]; ok && val {
 			msg := fmt.Sprintf("simulating error for method %q to URL %q", req.Method, req.URL.String())
-			Logf(msg)
+			Errorf(msg)
 			return nil, errors.New(msg)
 		}
 

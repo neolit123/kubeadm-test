@@ -74,9 +74,10 @@ func process(d *pkg.Data) (*github.Reference, *github.RepositoryCommit, error) {
 	latestTagVer, _ := pkg.TagRefToVersion(latestTag)
 
 	if !(latestTagVer.AtLeast(minVersion) && latestTagVer.LessThan(maxVersion)) {
-		pkg.Logf("the latest versioned tag %q for branch %q does not fall within the fast-forward window: %s <= VER < %s",
-			latestTag.GetRef(), latestBranch, minVersion.String(), maxVersion.String())
-		return nil, nil, &fastForwardWindowError{error: err}
+		return nil, nil, &fastForwardWindowError{
+			error: errors.Errorf("the latest versioned tag %q for branch %q does not fall within the fast-forward window: %s <= VER < %s",
+				latestTag.GetRef(), latestBranch, minVersion.String(), maxVersion.String()),
+		}
 	}
 
 	// Compare the latest and the master branches.
@@ -86,8 +87,10 @@ func process(d *pkg.Data) (*github.Reference, *github.RepositoryCommit, error) {
 	}
 	switch cmp.GetStatus() {
 	case "identical":
-		pkg.Logf("the branches %q and %q are identical", pkg.BranchMaster, latestBranch.GetRef())
-		return nil, nil, &identicalBranchesError{}
+		return nil, nil, &identicalBranchesError{
+			error: errors.Errorf("the branches %q and %q are identical",
+				pkg.BranchMaster, latestBranch.GetRef()),
+		}
 	default:
 		break
 	}
@@ -132,7 +135,10 @@ write:
 	switch mergeStatus {
 	case http.StatusCreated:
 		break
-	default:
+	case http.StatusNoContent:
+		return nil, nil, &noContentError{error: errors.Errorf("got status %d when merging branch %q into %q.",
+			mergeStatus, pkg.BranchMaster, latestBranch.GetRef())}
+	default: // Should not happen?
 		return nil, nil, &genericError{error: errors.Errorf("unexpected status %d when merging branch %q into %q. "+
 			"Please verify if the branch is mergeable!",
 			mergeStatus, pkg.BranchMaster, latestBranch.GetRef()),

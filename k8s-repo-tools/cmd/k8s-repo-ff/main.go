@@ -79,6 +79,8 @@ func main() {
 			break
 		case *identicalBranchesError:
 			break
+		case *noContentError:
+			break
 		default:
 			pkg.PrintErrorAndExit(err)
 		}
