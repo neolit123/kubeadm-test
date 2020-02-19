@@ -18,11 +18,9 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"testing"
 
 	"github.com/google/go-github/v29/github"
-	"github.com/pkg/errors"
 )
 
 func TestFormatOutput(t *testing.T) {
@@ -34,7 +32,7 @@ func TestFormatOutput(t *testing.T) {
 		{
 			name: "with error",
 			out: &output{
-				OutputError: github.String(fmt.Sprintf("%+v", &genericError{error: errors.New("test-error")})),
+				OutputError: github.String("test-error"),
 				Reference:   &github.Reference{},
 				Commit:      &github.RepositoryCommit{},
 			},
