@@ -195,9 +195,9 @@ func NewCompareHandler(commitsA, commitsB *[]*github.RepositoryCommit, methodErr
 				}
 			} else {
 				// Check if branch is ahead. No commit comparison, only length.
+				var commits []github.RepositoryCommit
 				if len(*commitsA) > len(*commitsB) {
 					// Grab the extra commits from A.
-					var commits []github.RepositoryCommit
 					for i := len(*commitsB) - 1; i < len(*commitsA); i++ {
 						commits = append(commits, *(*commitsA)[i])
 					}
@@ -206,8 +206,12 @@ func NewCompareHandler(commitsA, commitsB *[]*github.RepositoryCommit, methodErr
 						Commits: commits,
 					}
 				} else {
+					for i := len(*commitsA) - 1; i < len(*commitsB); i++ {
+						commits = append(commits, *(*commitsB)[i])
+					}
 					cmp = &github.CommitsComparison{
-						Status: github.String("behind"),
+						Status:  github.String("behind"),
+						Commits: commits,
 					}
 				}
 			}
