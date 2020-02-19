@@ -19,4 +19,5 @@ package main
 type releaseBranchError struct{ error }
 type fastForwardWindowError struct{ error }
 type identicalBranchesError struct{ error }
+type noContentError struct{ error }
 type genericError struct{ error }

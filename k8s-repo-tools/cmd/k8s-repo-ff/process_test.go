@@ -153,7 +153,7 @@ func TestProcess(t *testing.T) {
 			skipDryRun:        true,
 		},
 		{
-			name: "invalid: return unknown status when merging branches",
+			name: "invalid: return no-content status when merging branches",
 			commitsMaster: []*github.RepositoryCommit{
 				&github.RepositoryCommit{SHA: github.String("some-sha")},
 				&github.RepositoryCommit{SHA: github.String("some-sha")},
@@ -172,6 +172,29 @@ func TestProcess(t *testing.T) {
 				CommitMessage: github.String(pkg.FormatMergeCommitMessage("refs/heads/release-1.17", pkg.BranchMaster)),
 			},
 			mergeStatus:   http.StatusNoContent,
+			expectedError: &noContentError{},
+			skipDryRun:    true,
+		},
+		{
+			name: "invalid: return unhandled status when merging branches",
+			commitsMaster: []*github.RepositoryCommit{
+				&github.RepositoryCommit{SHA: github.String("some-sha")},
+				&github.RepositoryCommit{SHA: github.String("some-sha")},
+			},
+			commitsBranch: []*github.RepositoryCommit{
+				&github.RepositoryCommit{SHA: github.String("some-sha")},
+			},
+			refsDest: []*github.Reference{
+				&github.Reference{Ref: github.String("refs/tags/v1.17.0-beta.0"), Object: &github.GitObject{SHA: github.String("1234567890")}},
+				&github.Reference{Ref: github.String("refs/heads/master"), Object: &github.GitObject{SHA: github.String("1234567890")}},
+				&github.Reference{Ref: github.String("refs/heads/release-1.17"), Object: &github.GitObject{SHA: github.String("1234567890")}},
+			},
+			mergeRequest: &github.RepositoryMergeRequest{
+				Base:          github.String("refs/heads/release-1.17"),
+				Head:          github.String(pkg.BranchMaster),
+				CommitMessage: github.String(pkg.FormatMergeCommitMessage("refs/heads/release-1.17", pkg.BranchMaster)),
+			},
+			mergeStatus:   http.StatusPartialContent,
 			expectedError: &genericError{},
 			skipDryRun:    true,
 		},
@@ -250,7 +273,7 @@ func TestProcess(t *testing.T) {
 
 				ref, commit, err := process(data)
 				if err != nil {
-					pkg.Errorf("TEST: process error: %v", err)
+					pkg.Errorf("TEST: process error (%v): %v", reflect.TypeOf(err), err)
 				}
 				if (err != nil) != (tt.expectedError != nil) {
 					t.Fatalf("expected error %v, got %v", tt.expectedError != nil, err != nil)
