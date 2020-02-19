@@ -131,7 +131,7 @@ func process(d *pkg.Data) (*github.Reference, *github.RepositoryCommit, error) {
 
 write:
 	// Merge the branches.
-	commitMessage := formatCommitMessage(latestBranch.GetRef(), pkg.BranchMaster)
+	commitMessage := pkg.FormatMergeCommitMessage(latestBranch.GetRef(), pkg.BranchMaster)
 	commit, resp, err := pkg.GitHubMergeBranch(d, d.Dest, latestBranch.GetRef(), pkg.BranchMaster, commitMessage)
 	if err != nil {
 		return nil, nil, &genericError{error: err}
@@ -148,8 +148,4 @@ write:
 	}
 	pkg.Logf("created commit with SHA %q in repository %q", commit.GetSHA(), d.Dest)
 	return latestBranch, commit, nil
-}
-
-func formatCommitMessage(base, head string) string {
-	return fmt.Sprintf("Merge branch %q into %q", head, base)
 }

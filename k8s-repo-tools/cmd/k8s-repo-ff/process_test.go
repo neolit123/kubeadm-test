@@ -157,7 +157,7 @@ func TestProcess(t *testing.T) {
 			mergeRequest: &github.RepositoryMergeRequest{
 				Base:          github.String("refs/heads/release-1.17"),
 				Head:          github.String(pkg.BranchMaster),
-				CommitMessage: github.String(formatCommitMessage("refs/heads/release-1.17", pkg.BranchMaster)),
+				CommitMessage: github.String(pkg.FormatMergeCommitMessage("refs/heads/release-1.17", pkg.BranchMaster)),
 			},
 			mergeStatus:   http.StatusNoContent,
 			expectedError: &genericError{},
@@ -180,12 +180,12 @@ func TestProcess(t *testing.T) {
 			mergeRequest: &github.RepositoryMergeRequest{
 				Base:          github.String("refs/heads/release-1.17"),
 				Head:          github.String(pkg.BranchMaster),
-				CommitMessage: github.String(formatCommitMessage("refs/heads/release-1.17", pkg.BranchMaster)),
+				CommitMessage: github.String(pkg.FormatMergeCommitMessage("refs/heads/release-1.17", pkg.BranchMaster)),
 			},
 			mergeStatus: http.StatusCreated,
 			expectedCommit: &github.RepositoryCommit{
 				SHA:    github.String("dry-run-sha"),
-				Commit: &github.Commit{Message: github.String(formatCommitMessage("refs/heads/release-1.17", pkg.BranchMaster))},
+				Commit: &github.Commit{Message: github.String(pkg.FormatMergeCommitMessage("refs/heads/release-1.17", pkg.BranchMaster))},
 			},
 			expectedBranch: &github.Reference{
 				Ref:    github.String("refs/heads/release-1.17"),

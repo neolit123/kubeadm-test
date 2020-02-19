@@ -382,3 +382,11 @@ func findPreviousPreRelease(target *version.Version, refs []*github.Reference) *
 	}
 	return result
 }
+
+// FormatMergeCommitMessage creates a commit message that
+// indicates which branches are being merged.
+func FormatMergeCommitMessage(base, head string) string {
+	head = strings.TrimPrefix(head, "refs/heads/")
+	base = strings.TrimPrefix(base, "refs/heads/")
+	return fmt.Sprintf("Merge branch %q into %q", head, base)
+}
