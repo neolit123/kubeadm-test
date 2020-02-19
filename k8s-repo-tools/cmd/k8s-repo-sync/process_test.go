@@ -116,6 +116,7 @@ func TestProcess(t *testing.T) {
 			},
 			refsDest: []*github.Reference{
 				&github.Reference{Ref: github.String("refs/heads/master"), Object: &github.GitObject{SHA: github.String("1234567890")}},
+				&github.Reference{Ref: github.String("refs/heads/test-branch"), Object: &github.GitObject{SHA: github.String("1234567890")}},
 			},
 			expectedRefs: []*github.Reference{
 				&github.Reference{Ref: github.String("refs/heads/release-1.17"), Object: &github.GitObject{SHA: github.String("1234567890")}},
