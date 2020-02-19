@@ -1,5 +1,7 @@
 name: tag-created
 on:
+  repository_dispatch:
+    types: dispatch-k8s-create-release
   create:
     tags:
     - '*'
