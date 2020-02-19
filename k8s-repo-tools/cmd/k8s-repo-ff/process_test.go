@@ -97,18 +97,30 @@ func TestProcess(t *testing.T) {
 			expectedError: &identicalBranchesError{},
 		},
 		{
-			name:          "invalid: return error if master is behind",
-			commitsMaster: []*github.RepositoryCommit{&github.RepositoryCommit{SHA: github.String("some-sha")}},
+			name:          "valid: do not return error if master is behind",
+			commitsMaster: []*github.RepositoryCommit{&github.RepositoryCommit{SHA: github.String("some-sha1")}},
 			commitsBranch: []*github.RepositoryCommit{
-				&github.RepositoryCommit{SHA: github.String("some-sha")},
-				&github.RepositoryCommit{SHA: github.String("some-sha")},
+				&github.RepositoryCommit{SHA: github.String("some-sha1")},
+				&github.RepositoryCommit{SHA: github.String("some-sha2")},
 			},
 			refsDest: []*github.Reference{
 				&github.Reference{Ref: github.String("refs/tags/v1.17.0-beta.0"), Object: &github.GitObject{SHA: github.String("1234567890")}},
 				&github.Reference{Ref: github.String("refs/heads/master"), Object: &github.GitObject{SHA: github.String("1234567890")}},
 				&github.Reference{Ref: github.String("refs/heads/release-1.17"), Object: &github.GitObject{SHA: github.String("1234567890")}},
 			},
-			expectedError: &genericError{},
+			mergeRequest: &github.RepositoryMergeRequest{
+				Base:          github.String("refs/heads/release-1.17"),
+				Head:          github.String(pkg.BranchMaster),
+				CommitMessage: github.String(pkg.FormatMergeCommitMessage("refs/heads/release-1.17", pkg.BranchMaster)),
+			},
+			expectedCommit: &github.RepositoryCommit{
+				SHA:    github.String("dry-run-sha"),
+				Commit: &github.Commit{Message: github.String(pkg.FormatMergeCommitMessage("refs/heads/release-1.17", pkg.BranchMaster))},
+			},
+			expectedBranch: &github.Reference{
+				Ref:    github.String("refs/heads/release-1.17"),
+				Object: &github.GitObject{SHA: github.String("1234567890")},
+			},
 		},
 		{
 			name:          "invalid: return error comparing branches",
@@ -237,8 +249,11 @@ func TestProcess(t *testing.T) {
 				data.Transport.SetHandler(testMerges, handlerMerge)
 
 				ref, commit, err := process(data)
+				if err != nil {
+					pkg.Errorf("TEST: process error: %v", err)
+				}
 				if (err != nil) != (tt.expectedError != nil) {
-					t.Fatalf("expected error %v, got %v, error: %v", tt.expectedError != nil, err != nil, err)
+					t.Fatalf("expected error %v, got %v", tt.expectedError != nil, err != nil)
 				}
 				expectedErrorType := reflect.TypeOf(tt.expectedError)
 				errorType := reflect.TypeOf(err)

@@ -74,7 +74,7 @@ func process(d *pkg.Data) (*github.Reference, *github.RepositoryCommit, error) {
 	latestTagVer, _ := pkg.TagRefToVersion(latestTag)
 
 	if !(latestTagVer.AtLeast(minVersion) && latestTagVer.LessThan(maxVersion)) {
-		pkg.Logf("the latest versioned tag %q for branch %q not fall withing the fast-forward window: %s <= VER < %s",
+		pkg.Logf("the latest versioned tag %q for branch %q does not fall within the fast-forward window: %s <= VER < %s",
 			latestTag.GetRef(), latestBranch, minVersion.String(), maxVersion.String())
 		return nil, nil, &fastForwardWindowError{error: err}
 	}
@@ -85,16 +85,11 @@ func process(d *pkg.Data) (*github.Reference, *github.RepositoryCommit, error) {
 		return nil, nil, &genericError{error: err}
 	}
 	switch cmp.GetStatus() {
-	case "ahead":
-		break
 	case "identical":
 		pkg.Logf("the branches %q and %q are identical", pkg.BranchMaster, latestBranch.GetRef())
 		return nil, nil, &identicalBranchesError{}
 	default:
-		return nil, nil, &genericError{error: errors.Errorf("got unhandled status %q comparing branches %q and %q. "+
-			"Please check the state of the repository!",
-			cmp.GetStatus(), pkg.BranchMaster, latestBranch.GetRef()),
-		}
+		break
 	}
 	if len(cmp.Commits) == 0 { // Should not happen.
 		return nil, nil, &genericError{error: errors.Errorf("branch %q was reported with status %q, but there are no new commits",
@@ -102,9 +97,9 @@ func process(d *pkg.Data) (*github.Reference, *github.RepositoryCommit, error) {
 		}
 	}
 
-	pkg.Logf("branch %q is ahead of %q by %d commits",
-		pkg.BranchMaster, latestBranch.GetRef(), cmp.GetTotalCommits())
-	commitURLs := "list of commits:"
+	pkg.Logf("branch comparison status between %q and %q is reported as %q",
+		pkg.BranchMaster, latestBranch.GetRef(), cmp.GetStatus())
+	commitURLs := "list of commits from the comparison:"
 	for _, c := range cmp.Commits {
 		commitURLs += "\n" + c.GetHTMLURL()
 	}

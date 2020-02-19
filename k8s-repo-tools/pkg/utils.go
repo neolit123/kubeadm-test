@@ -388,5 +388,5 @@ func findPreviousPreRelease(target *version.Version, refs []*github.Reference) *
 func FormatMergeCommitMessage(base, head string) string {
 	head = strings.TrimPrefix(head, "refs/heads/")
 	base = strings.TrimPrefix(base, "refs/heads/")
-	return fmt.Sprintf("Merge branch %q into %q", head, base)
+	return fmt.Sprintf("Merge branch %q into %s", head, base)
 }
