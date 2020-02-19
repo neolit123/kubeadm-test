@@ -37,9 +37,8 @@ func TrimTags(refs []*github.Reference, minV *version.Version) []*github.Referen
 			Warningf(err.Error())
 			continue
 		}
-
 		if v.LessThan(minV) {
-			Errorf("skipping ref %s; version is older than the minimum version", ref.GetRef())
+			Warningf("skipping ref %s; version is older than the minimum version", ref.GetRef())
 			continue
 		}
 		result = append(result, ref)
@@ -134,7 +133,11 @@ func FindBranchHEADForTag(
 	tagStr := tag.GetRef()
 	prefix := "refs/tags/"
 	tagStr = strings.TrimPrefix(tagStr, prefix)
-	tagVer := version.MustParseSemantic(tagStr)
+	tagVer, err := version.ParseSemantic(tagStr)
+	if err != nil {
+		Warningf("skipping non-versioned input ref %s", tag.GetRef(), err)
+		goto exit
+	}
 	Logf("finding branch for tag %q", tagStr)
 
 	for _, branch := range branches {
@@ -146,13 +149,18 @@ func FindBranchHEADForTag(
 		if strings.Count(branchRef, ".") < 2 {
 			branchRef = branchRef + ".0"
 		}
-		branchVer := version.MustParseSemantic(branchRef)
+		branchVer, err := version.ParseSemantic(branchRef)
+		if err != nil {
+			Warningf("skipping ref %s: %v", branch.GetRef(), err)
+			continue
+		}
 		if tagVer.Major() == branchVer.Major() && tagVer.Minor() == branchVer.Minor() {
 			sha := branch.GetObject().GetSHA()
 			Logf("found matching destination branch %q for tag %q with HEAD %q", branch.GetRef(), tag, sha)
 			return sha
 		}
 	}
+exit:
 	Logf("using the %q branch for new tag %q", BranchMaster, tag)
 	return masterSHA
 }
@@ -322,7 +330,7 @@ func findLargestMinorForMajorRef(largest *version.Version, refs []*github.Refere
 		}
 		ver, err := version.ParseSemantic(tag)
 		if err != nil {
-			Errorf("skipping ref %s: %v", refs[i], err)
+			Warningf("skipping ref %s: %v", refs[i], err)
 			continue
 		}
 		if largest.LessThan(ver) && largest.Major() == ver.Major() {
@@ -342,7 +350,7 @@ func findExactVersionRef(target *version.Version, refs []*github.Reference) *git
 		}
 		ver, err := version.ParseSemantic(tag)
 		if err != nil {
-			Errorf("skipping ref %s: %v", refs[i], err)
+			Warningf("skipping ref %s: %v", refs[i], err)
 			continue
 		}
 		if target.String() == ver.String() {
@@ -364,7 +372,7 @@ func findPreviousPreRelease(target *version.Version, refs []*github.Reference) *
 		}
 		ver, err := version.ParseSemantic(tag)
 		if err != nil {
-			Errorf("skipping ref %s: %v", refs[i], err)
+			Warningf("skipping ref %s: %v", refs[i], err)
 			continue
 		}
 		if largest.LessThan(ver) && ver.LessThan(target) {
