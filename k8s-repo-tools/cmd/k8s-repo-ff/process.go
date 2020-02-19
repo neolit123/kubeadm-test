@@ -91,19 +91,16 @@ func process(d *pkg.Data) (*github.Reference, *github.RepositoryCommit, error) {
 	default:
 		break
 	}
-	if len(cmp.Commits) == 0 { // Should not happen.
-		return nil, nil, &genericError{error: errors.Errorf("branch %q was reported with status %q, but there are no new commits",
-			pkg.BranchMaster, cmp.GetStatus()),
-		}
-	}
 
-	pkg.Logf("branch comparison status between %q and %q is reported as %q",
-		pkg.BranchMaster, latestBranch.GetRef(), cmp.GetStatus())
-	commitURLs := "list of commits from the comparison:"
-	for _, c := range cmp.Commits {
-		commitURLs += "\n" + c.GetHTMLURL()
+	pkg.Logf("branch comparison status between %q and %q is reported as %q and there are %d different commit(s)",
+		pkg.BranchMaster, latestBranch.GetRef(), cmp.GetStatus(), len(cmp.Commits))
+	if len(cmp.Commits) > 0 {
+		commitURLs := "list of commits from the comparison:"
+		for _, c := range cmp.Commits {
+			commitURLs += "\n" + c.GetHTMLURL()
+		}
+		pkg.Logf(commitURLs)
 	}
-	pkg.Logf(commitURLs)
 	pkg.Logf("comparison URL:\n%s", cmp.GetHTMLURL())
 
 	var promptMessage string
