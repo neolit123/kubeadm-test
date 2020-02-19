@@ -51,6 +51,10 @@ const (
 	FlagReleaseNotesToolPath = "release-notes-tool-path"
 	// FlagReleaseNotesPath ...
 	FlagReleaseNotesPath = "release-notes-path"
+	// FlagBuildCommand ...
+	FlagBuildCommand = "build-command"
+	// FlagReleaseAsset ...
+	FlagReleaseAsset = "release-asset"
 )
 
 // SetupFlags ...
@@ -81,6 +85,10 @@ func SetupFlags(d *Data, fs *flag.FlagSet, flags []string) {
 			fs.StringVar(&d.ReleaseNotesToolPath, FlagReleaseNotesToolPath, "", "Path to the release notes tool binary")
 		case FlagReleaseNotesPath:
 			fs.StringVar(&d.ReleaseNotesPath, FlagReleaseNotesPath, "", fmt.Sprintf("Path to a text file containing release notes. Overrides the usage of %q", FlagReleaseNotesToolPath))
+		case FlagBuildCommand:
+			fs.StringVar(&d.BuildCommand, FlagBuildCommand, "", "A command to execute for build the release assets")
+		case FlagReleaseAsset:
+			fs.Var(&d.ReleaseAssets, FlagReleaseAsset, "A release asset to upload to the GitHub release. Multiple instances of the flag are allowed")
 		}
 	}
 }

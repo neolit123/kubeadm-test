@@ -27,7 +27,7 @@ import (
 func printUsage() {
 	out := os.Stderr
 	fmt.Fprintln(out, "k8s-create-release is a tool for creating a GitHub release\n"+
-		"from a tag with a changelog and artifacts")
+		"from a tag with a changelog and assets")
 	fmt.Fprintln(out, "\nusage:")
 	fmt.Fprintf(out, "  k8s-create-release -dest=org/repo -token=<token> -release-tag=<tag> <options>\n\n")
 	flag.CommandLine.PrintDefaults()
@@ -49,8 +49,10 @@ func main() {
 		pkg.FlagTimeout,
 		pkg.FlagDryRun,
 		pkg.FlagForce,
+		pkg.FlagBuildCommand,
 		pkg.FlagReleaseTag,
 		pkg.FlagReleaseNotesToolPath,
+		pkg.FlagReleaseAsset,
 	}
 	pkg.SetupFlags(&d, flag.CommandLine, flagList)
 	flag.Parse()

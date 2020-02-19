@@ -77,16 +77,31 @@ func process(d *pkg.Data) error {
 		return err
 	}
 
-	// TODO: build release
-
-	files := []string{}
-	// TODO: user-provided assets, verify that the build created them.
-
-	err = pkg.GitHubUploadReleaseAssets(d, d.Dest, release, files)
-	if err != nil {
-		return err
+	// Build the release if a build command was provided.
+	if len(d.BuildCommand) != 0 {
+		if d.DryRun {
+			pkg.Logf("%s: would execute the build command:\n%s", pkg.PrefixDryRun, d.BuildCommand)
+		} else {
+			if err := runCommand(d.BuildCommand); err != nil {
+				return err
+			}
+		}
+	} else {
+		pkg.Warningf("empty --%s value; skipping build", pkg.FlagBuildCommand)
 	}
 
+	// Upload the release assets if such are provided.
+	if len(d.ReleaseAssets) > 0 {
+		if d.DryRun {
+			pkg.Logf("%s: would upload the following artifacts to the release:\n%v", pkg.PrefixDryRun, d.ReleaseAssets)
+		} else {
+			if err = pkg.GitHubUploadReleaseAssets(d, d.Dest, release, d.ReleaseAssets); err != nil {
+				return err
+			}
+		}
+	} else {
+		pkg.Warningf("no release assets were provided using --%s; skipping upload", pkg.FlagReleaseAsset)
+	}
 	return nil
 }
 
@@ -120,17 +135,22 @@ func runGenerateReleaseNotes(d *pkg.Data, startSHA, endSHA string) (string, erro
 		"--github-repo=" + ownerRepo[1],
 		"--toc",
 	}
-	pkg.Logf("using arguments: %v", args)
+	if err := runCommand(d.ReleaseNotesToolPath, args...); err != nil {
+		return "", err
+	}
+	return outputPath, nil
+}
 
-	// Prepare the command and run it.
-	cmd := exec.Command(d.ReleaseNotesToolPath, args...)
+func runCommand(cmdPath string, args ...string) error {
+	pkg.Logf("running command: %s", cmdPath)
+	pkg.Logf("using arguments: %v", args)
+	cmd := exec.Command(cmdPath, args...)
 	stdout, stderr := pkg.GetLogWriters()
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
 	cmd.Env = os.Environ()
 	if err := cmd.Run(); err != nil {
-		return "", err
+		return err
 	}
-
-	return outputPath, nil
+	return nil
 }

@@ -19,6 +19,7 @@ package pkg
 import (
 	"context"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -34,6 +35,18 @@ const (
 	PrefixDryRun = "DRY-RUN"
 )
 
+// stringList is a type that implements the flag.Value interface.
+type stringList []string
+
+func (list *stringList) String() string {
+	return strings.Join(*list, ",")
+}
+
+func (list *stringList) Set(value string) error {
+	*list = append(*list, value)
+	return nil
+}
+
 // Data is the main data structure of the application.
 type Data struct {
 	// From flags
@@ -46,6 +59,8 @@ type Data struct {
 	ReleaseTag           string
 	ReleaseNotesToolPath string
 	ReleaseNotesPath     string
+	ReleaseAssets        stringList
+	BuildCommand         string
 	Timeout              time.Duration
 	DryRun               bool
 	Force                bool
