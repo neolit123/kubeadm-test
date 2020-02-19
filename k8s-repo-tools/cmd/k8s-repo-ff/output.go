@@ -18,7 +18,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 
 	"github.com/google/go-github/v29/github"
@@ -49,8 +48,12 @@ func formatOutput(out *output, indent bool) ([]byte, error) {
 
 // writeOutputToFile writes the output to the given filePath.
 func writeOutputToFile(filePath string, ref *github.Reference, commit *github.RepositoryCommit, outputError error) error {
+	var errorStr *string
+	if outputError != nil {
+		errorStr = github.String(outputError.Error())
+	}
 	out := &output{
-		OutputError: github.String(fmt.Sprintf("%+v", outputError)),
+		OutputError: errorStr,
 		Reference:   ref,
 		Commit:      commit,
 	}
