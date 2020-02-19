@@ -19,7 +19,6 @@ package pkg
 import (
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/google/go-github/v29/github"
@@ -209,7 +208,7 @@ func GitHubGetCreateRelease(d *Data, repo, tag string, body string) (*github.Rep
 }
 
 // GitHubUploadReleaseAssets uploads files to a GitHub repository.
-func GitHubUploadReleaseAssets(d *Data, repo string, release *github.RepositoryRelease, files []string) error {
+func GitHubUploadReleaseAssets(d *Data, repo string, release *github.RepositoryRelease, assetsMap map[string]string) error {
 	ownerRepo := strings.Split(repo, "/")
 	id := release.GetID()
 
@@ -225,37 +224,36 @@ func GitHubUploadReleaseAssets(d *Data, repo string, release *github.RepositoryR
 	Logf("found %d assets", len(assets))
 
 	// Only upload new files.
-	filesNew := []string{}
-	for _, f := range files {
+	var assetsNew map[string]string
+	for k, v := range assetsMap {
 		exists := false
-		fBase := filepath.Base(f)
 		for _, a := range assets {
-			if fBase == a.GetName() {
+			if k == a.GetName() {
 				exists = true
 				break
 			}
 		}
 		if exists {
-			Logf("skipping existing asset %q", fBase)
+			Logf("skipping existing asset %q", k)
 			continue
 		}
-		filesNew = append(filesNew, f)
+		assetsNew[k] = v
 	}
 
-	for _, f := range filesNew {
+	for k, v := range assetsNew {
 		// Open the file.
-		file, err := os.Open(f)
+		file, err := os.Open(v)
 		if err != nil {
 			return err
 		}
 
 		opt := github.UploadOptions{
-			Name:      filepath.Base(f),
+			Name:      k,
 			MediaType: "application/octet-stream",
 		}
 
 		// Upload the file as asset.
-		Logf("uploading asset %q", f)
+		Logf("uploading asset %q from path %q", k, v)
 		ctx, cancel = d.CreateContext()
 		defer cancel()
 		_, _, err = d.client.Repositories.UploadReleaseAsset(ctx, ownerRepo[0], ownerRepo[1], id, &opt, file)

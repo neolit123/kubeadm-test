@@ -18,6 +18,8 @@ package pkg
 
 import (
 	"context"
+	"fmt"
+	"github.com/pkg/errors"
 	"net/http"
 	"strings"
 	"sync"
@@ -35,15 +37,28 @@ const (
 	PrefixDryRun = "DRY-RUN"
 )
 
-// stringList is a type that implements the flag.Value interface.
-type stringList []string
+// assetMap is a type that implements the flag.Value interface
+// for supporting user input of 'name=path' for assets.
+type assetMap map[string]string
 
-func (list *stringList) String() string {
-	return strings.Join(*list, ",")
+func (m *assetMap) String() string {
+	var list []string
+	for k, v := range *m {
+		list = append(list, fmt.Sprintf("%s=%s", k, v))
+	}
+	return strings.Join(list, ",")
 }
 
-func (list *stringList) Set(value string) error {
-	*list = append(*list, value)
+func (m *assetMap) Set(value string) error {
+	kv := strings.Split(value, "=")
+	err := errors.Errorf("invalid asset format %q. Value must be formatted as 'name=path'", value)
+	if len(kv) < 2 {
+		return err
+	}
+	if len(kv[0]) == 0 || len(kv[1]) == 0 {
+		return err
+	}
+	(*m)[kv[0]] = kv[1]
 	return nil
 }
 
@@ -59,7 +74,7 @@ type Data struct {
 	ReleaseTag           string
 	ReleaseNotesToolPath string
 	ReleaseNotesPath     string
-	ReleaseAssets        stringList
+	ReleaseAssets        assetMap
 	BuildCommand         string
 	Timeout              time.Duration
 	DryRun               bool
