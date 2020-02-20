@@ -88,7 +88,7 @@ func SetupFlags(d *Data, fs *flag.FlagSet, flags []string) {
 		case FlagBuildCommand:
 			fs.StringVar(&d.BuildCommand, FlagBuildCommand, "", "A command to execute for build the release assets")
 		case FlagReleaseAsset:
-			fs.Var(&d.ReleaseAssets, FlagReleaseAsset, "A release asset to upload to the GitHub release. Multiple instances of the flag are allowed")
+			fs.Var(&d.ReleaseAssets, FlagReleaseAsset, "A release asset to upload to the GitHub release. Must be formatted as 'assetName=filePath'. Multiple instances of the flag are allowed")
 		}
 	}
 }
