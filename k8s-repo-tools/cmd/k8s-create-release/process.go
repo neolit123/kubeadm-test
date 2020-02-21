@@ -105,10 +105,6 @@ func process(d *pkg.Data) error {
 	return nil
 }
 
-func formatReleaseBody(body []byte) string {
-	return fmt.Sprintf("<details>\n<summary>Click to see changelog</summary>\n\n%q\n\n</details>", body)
-}
-
 func runGenerateReleaseNotes(d *pkg.Data, startSHA, endSHA string) (string, error) {
 	pkg.Logf("will now run the release notes tool at %q", d.ReleaseNotesToolPath)
 

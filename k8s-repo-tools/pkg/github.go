@@ -199,11 +199,10 @@ func GitHubGetCreateRelease(d *Data, repo, tag string, body string) (*github.Rep
 		Prerelease: github.Bool(false),
 	}
 
-	release, resp, err = d.client.Repositories.CreateRelease(ctx, ownerRepo[0], ownerRepo[1], &rel)
+	release, _, err = d.client.Repositories.CreateRelease(ctx, ownerRepo[0], ownerRepo[1], &rel)
 	if err != nil {
 		return nil, err
 	}
-
 	return release, err
 }
 
@@ -224,7 +223,7 @@ func GitHubUploadReleaseAssets(d *Data, repo string, release *github.RepositoryR
 	Logf("found %d assets", len(assets))
 
 	// Only upload new files.
-	var assetsNew map[string]string
+	assetsNew := map[string]string{}
 	for k, v := range assetsMap {
 		exists := false
 		for _, a := range assets {
