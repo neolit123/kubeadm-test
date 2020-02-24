@@ -13,19 +13,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -o xtrace
 set -o errexit
 set -o nounset
 set -o pipefail
 
-SCRIPT_PATH=$(dirname "$(realpath "$0")")
-
-pushd "$SCRIPT_PATH/.."
+script_path=$(dirname "$(realpath "$0")")
+pushd "$script_path/.."
 mkdir -p ./_output
-GOOS=windows GOARCH=amd64 go build -o ./_output/windows/amd64/app.exe ./app/...
-GOOS=linux GOARCH=amd64   go build -o ./_output/linux/amd64/app       ./app/...
-GOOS=linux GOARCH=arm     go build -o ./_output/linux/arm/app         ./app/...
-GOOS=linux GOARCH=arm64   go build -o ./_output/linux/arm64/app       ./app/...
-GOOS=linux GOARCH=ppc64   go build -o ./_output/linux/ppc64/app       ./app/...
-GOOS=linux GOARCH=s390x   go build -o ./_output/linux/s390x/app       ./app/...
+mkdir -p ./_output/assets
+
+app_name=app
+app_path=./"$app_name"/...
+
+function build_os() {
+  local os="$1"
+  local ext="$2"
+  shift 2
+  local arches=("$@")
+  for arch in "${arches[@]}"; do
+    (set -x; GOOS="$os" GOARCH="$arch" go build -o ./_output/"$os/$arch/$app_name$ext" "$app_path")
+    local asset="$app_name-$os-$arch.tar.gz"
+    (set -x; tar -C ./_output/"$os/$arch" -czvf ./_output/assets/"$asset" "$app_name$ext" > /dev/null)
+    (set -x; sha256sum ./_output/assets/"$asset" > ./_output/assets/"$asset.sha256")
+  done
+}
+
+arch_linux=(amd64 arm arm64 ppc64 s390x)
+arch_windows=(amd64)
+
+build_os "linux"   ""     "${arch_linux[@]}"
+build_os "windows" ".exe" "${arch_windows[@]}"
 popd
