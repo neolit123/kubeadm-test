@@ -22,7 +22,14 @@ script_path=$(dirname "$(realpath "$0")")
 source "$script_path"/version.sh
 
 # workaround the issue around "git describe" not using the latest tag
-latest_tag=$(git for-each-ref refs/tags --sort=-taggerdate --format='%(refname)' --count=1 | cut -d '/' -f 3)
+git_branch=$(git rev-parse --abbrev-ref HEAD)
+if [[ $git_branch == "master" ]]; then
+  latest_tag=$(git for-each-ref refs/tags --sort=-taggerdate --format='%(refname)' --count=1 | cut -d '/' -f 3)
+else
+  git_branch=${git_branch#"release-"}
+  latest_tag=$(git for-each-ref refs/tags --sort=-taggerdate --format='%(refname)' | cut -d '/' -f 3 | grep $git_branch | head -n 1)
+fi
+
 commits_since_tag=$(git rev-list "$latest_tag"..HEAD --count)
 sha=$(git rev-parse --short=14 HEAD)
 
