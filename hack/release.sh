@@ -14,7 +14,6 @@
 # limitations under the License.
 
 set -o errexit
-set -o nounset
 set -o pipefail
 
 script_path=$(dirname "$(realpath "$0")")
@@ -22,34 +21,53 @@ script_path=$(dirname "$(realpath "$0")")
 source "$script_path"/version.sh
 
 # workaround the issue around "git describe" not using the latest tag
-git_branch=$(git rev-parse --abbrev-ref HEAD)
-if [[ $git_branch == "master" ]]; then
-  latest_tag=$(git for-each-ref refs/tags --sort=-taggerdate --format='%(refname)' --count=1 | cut -d '/' -f 3)
+#
+# check if running in a git repository
+if [[ $(git rev-parse --is-inside-work-tree 2> /dev/null) == "true" ]]; then
+  echo "running in a git repository"
+
+  git_branch=$(git rev-parse --abbrev-ref HEAD)
+  if [[ $git_branch == "master" ]]; then
+    # if on the master branch get the newest tag
+    latest_tag=$(git for-each-ref refs/tags --sort=-taggerdate --format='%(refname)' --count=1 | cut -d '/' -f 3)
+  else
+    # if on a release branch get the newest tag for this release
+    git_branch=${git_branch#"release-"}
+    latest_tag=$(git for-each-ref refs/tags --sort=-taggerdate --format='%(refname)' | cut -d '/' -f 3 | grep "$git_branch" | head -n 1)
+  fi
+  commits_since_tag=$(git rev-list "$latest_tag"..HEAD --count)
+  sha=$(git rev-parse --short=14 HEAD)
+
+  if [[ $commits_since_tag == "0" ]]; then
+    export KUBE_GIT_VERSION=$latest_tag
+  else
+    export KUBE_GIT_VERSION=$latest_tag-$commits_since_tag-g$sha
+  fi
+  KUBE_GIT_COMMIT=$(git rev-parse HEAD)
+  export KUBE_GIT_COMMIT
+
 else
-  git_branch=${git_branch#"release-"}
-  latest_tag=$(git for-each-ref refs/tags --sort=-taggerdate --format='%(refname)' | cut -d '/' -f 3 | grep $git_branch | head -n 1)
+  echo "not running in a git repository"
+
+  # if this is not a repository require KUBE_GIT_VERSION_FILE to be set
+  if [[ -z "$KUBE_GIT_VERSION_FILE" ]]; then
+    echo "error: KUBE_GIT_VERSION_FILE must be set"
+    exit 1
+  fi
 fi
 
-commits_since_tag=$(git rev-list "$latest_tag"..HEAD --count)
-sha=$(git rev-parse --short=14 HEAD)
-
-if [[ $commits_since_tag == "0" ]]; then
-  export KUBE_GIT_VERSION=$latest_tag
-else
-  export KUBE_GIT_VERSION=$latest_tag-$commits_since_tag-g$sha
-fi
-KUBE_GIT_COMMIT=$(git rev-parse HEAD)
-export KUBE_GIT_COMMIT
+# generate ldflags
 export KUBE_ROOT="$script_path"/..
 ldflags=$(kube::version::ldflags)
 
-pushd "$script_path/.."
+pushd "$KUBE_ROOT"
 mkdir -p ./_output
 mkdir -p ./_output/assets
 
 app_name=app
 app_path=./"$app_name"
 
+# build all architectures for a given OS
 function build_os() {
   local os="$1"
   local ext="$2"
