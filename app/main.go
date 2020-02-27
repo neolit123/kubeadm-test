@@ -16,8 +16,12 @@ limitations under the License.
 
 package main
 
-import "fmt"
+import (
+	"fmt"
+
+	"k8s.io/component-base/version"
+)
 
 func main() {
-	fmt.Println("hello world")
+	fmt.Printf("%+v\n", version.Get())
 }

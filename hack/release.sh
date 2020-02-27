@@ -18,12 +18,30 @@ set -o nounset
 set -o pipefail
 
 script_path=$(dirname "$(realpath "$0")")
+# shellcheck disable=SC1090
+source "$script_path"/version.sh
+
+# workaround the issue around "git describe" not using the latest tag
+latest_tag=$(git for-each-ref refs/tags --sort=-taggerdate --format='%(refname)' --count=1 | cut -d '/' -f 3)
+commits_since_tag=$(git rev-list "$latest_tag"..HEAD --count)
+sha=$(git rev-parse --short=14 HEAD)
+
+if [[ $commits_since_tag == "0" ]]; then
+  export KUBE_GIT_VERSION=$latest_tag
+else
+  export KUBE_GIT_VERSION=$latest_tag-$commits_since_tag-g$sha
+fi
+KUBE_GIT_COMMIT=$(git rev-parse HEAD)
+export KUBE_GIT_COMMIT
+export KUBE_ROOT="$script_path"/..
+ldflags=$(kube::version::ldflags)
+
 pushd "$script_path/.."
 mkdir -p ./_output
 mkdir -p ./_output/assets
 
 app_name=app
-app_path=./"$app_name"/...
+app_path=./"$app_name"
 
 function build_os() {
   local os="$1"
@@ -31,7 +49,9 @@ function build_os() {
   shift 2
   local arches=("$@")
   for arch in "${arches[@]}"; do
-    (set -x; GOOS="$os" GOARCH="$arch" go build -o ./_output/"$os/$arch/$app_name$ext" "$app_path")
+    pushd "$app_path"
+    (set -x; GOOS="$os" GOARCH="$arch" go build -o ../_output/"$os/$arch/$app_name$ext" -ldflags "$ldflags")
+    popd
     local asset="$app_name-$os-$arch.tar.gz"
     (set -x; tar -C ./_output/"$os/$arch" -czvf ./_output/assets/"$asset" "$app_name$ext" > /dev/null)
     (set -x; sha256sum ./_output/assets/"$asset" > ./_output/assets/"$asset.sha256")
