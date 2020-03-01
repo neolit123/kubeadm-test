@@ -20,43 +20,48 @@ script_path=$(dirname "$(realpath "$0")")
 # shellcheck disable=SC1090
 source "$script_path"/version.sh
 
-# workaround the issue around "git describe" not using the latest tag
-#
-# check if running in a git repository
-if [[ $(git rev-parse --is-inside-work-tree 2> /dev/null) == "true" ]]; then
-  echo "running in a git repository"
+# If KUBE_GIT_VERSION is not set, attempt to set it outside of the kube::version::ldflags logic.
+# This workarounds the issue around "git describe" not using the latest tag.
+if [[ -z "$KUBE_GIT_VERSION" ]]; then
 
-  git_branch=$(git rev-parse --abbrev-ref HEAD)
-  if [[ $git_branch == "master" ]]; then
-    # if on the master branch get the newest tag
-    latest_tag=$(git for-each-ref refs/tags --sort=-taggerdate --format='%(refname)' --count=1 | cut -d '/' -f 3)
+  # Check if running in a git repository
+  if [[ $(git rev-parse --is-inside-work-tree 2> /dev/null) == "true" ]]; then
+    echo "* running in a git repository"
+
+    # Get the latest tag based on the current branch
+    git_branch=$(git rev-parse --abbrev-ref HEAD)
+    if [[ $git_branch == "master" ]]; then
+      # If on the master branch get the newest tag
+      latest_tag=$(git for-each-ref refs/tags --sort=-taggerdate --format='%(refname)' --count=1 | cut -d '/' -f 3)
+    else
+      # If on a release branch get the newest tag for this release
+      git_branch=${git_branch#"release-"}
+      latest_tag=$(git for-each-ref refs/tags --sort=-taggerdate --format='%(refname)' | cut -d '/' -f 3 | grep "$git_branch" | head -n 1)
+    fi
+
+    # Count the number of commits since the latest tag and get the short SHA
+    commits_since_tag=$(git rev-list "$latest_tag"..HEAD --count)
+    sha=$(git rev-parse --short=14 HEAD)
+
+    # Format the KUBE_GIT_VERSION
+    if [[ $commits_since_tag == "0" ]]; then
+      export KUBE_GIT_VERSION=$latest_tag
+    else
+      export KUBE_GIT_VERSION=$latest_tag-$commits_since_tag-g$sha
+    fi
+
   else
-    # if on a release branch get the newest tag for this release
-    git_branch=${git_branch#"release-"}
-    latest_tag=$(git for-each-ref refs/tags --sort=-taggerdate --format='%(refname)' | cut -d '/' -f 3 | grep "$git_branch" | head -n 1)
-  fi
-  commits_since_tag=$(git rev-list "$latest_tag"..HEAD --count)
-  sha=$(git rev-parse --short=14 HEAD)
+    # If this is not a repository require KUBE_GIT_VERSION_FILE to be set
+    echo "* not running in a git repository"
 
-  if [[ $commits_since_tag == "0" ]]; then
-    export KUBE_GIT_VERSION=$latest_tag
-  else
-    export KUBE_GIT_VERSION=$latest_tag-$commits_since_tag-g$sha
-  fi
-  KUBE_GIT_COMMIT=$(git rev-parse HEAD)
-  export KUBE_GIT_COMMIT
-
-else
-  echo "not running in a git repository"
-
-  # if this is not a repository require KUBE_GIT_VERSION_FILE to be set
-  if [[ -z "$KUBE_GIT_VERSION_FILE" ]]; then
-    echo "error: KUBE_GIT_VERSION_FILE must be set"
-    exit 1
+    if [[ -z "$KUBE_GIT_VERSION_FILE" ]]; then
+      echo "error: KUBE_GIT_VERSION_FILE must be set. See ./hack/version.sh for details."
+      exit 1
+    fi
   fi
 fi
 
-# generate ldflags
+# Generate ldflags
 export KUBE_ROOT="$script_path"/..
 ldflags=$(kube::version::ldflags)
 
@@ -67,16 +72,16 @@ mkdir -p ./_output/assets
 app_name=app
 app_path=./"$app_name"
 
-# build all architectures for a given OS
+# Build all architectures for a given OS
 function build_os() {
   local os="$1"
   local ext="$2"
   shift 2
   local arches=("$@")
   for arch in "${arches[@]}"; do
-    pushd "$app_path"
+    pushd "$app_path" > /dev/null
     (set -x; GOOS="$os" GOARCH="$arch" go build -o ../_output/"$os/$arch/$app_name$ext" -ldflags "$ldflags")
-    popd
+    popd > /dev/null
     local asset="$app_name-$os-$arch.tar.gz"
     (set -x; tar -C ./_output/"$os/$arch" -czvf ./_output/assets/"$asset" "$app_name$ext" > /dev/null)
     (set -x; sha256sum ./_output/assets/"$asset" > ./_output/assets/"$asset.sha256")
@@ -88,4 +93,3 @@ arch_windows=(amd64)
 
 build_os "linux"   ""     "${arch_linux[@]}"
 build_os "windows" ".exe" "${arch_windows[@]}"
-popd
