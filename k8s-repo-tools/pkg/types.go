@@ -69,6 +69,7 @@ type Data struct {
 	Source               string
 	MinVersion           string
 	Token                string
+	Branch               string
 	PrefixBranch         string
 	Output               string
 	ReleaseTag           string

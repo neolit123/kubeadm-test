@@ -70,15 +70,19 @@ func TrimBranches(refs []*github.Reference, minV *version.Version, prefix string
 
 // TagRefToVersion converts a tag Reference to a Version.
 func TagRefToVersion(ref *github.Reference) (*version.Version, error) {
-	refStr := ref.GetRef()
-	ver := strings.TrimPrefix(refStr, "refs/tags/")
+	return TagToVersion(ref.GetRef())
+}
+
+// TagToVersion converts a tag string to Version.
+func TagToVersion(tag string) (*version.Version, error) {
+	ver := strings.TrimPrefix(tag, "refs/tags/")
 	if strings.Count(ver, ".") < 2 { // a version without a .PATCH component?
 		ver = ver + ".0"
 	}
 
 	v, err := version.ParseSemantic(ver)
 	if err != nil {
-		return nil, errors.Wrapf(err, "skipping ref %s", refStr)
+		return nil, errors.Wrapf(err, "cannot parse tag reference %q", tag)
 	}
 	return v, nil
 }

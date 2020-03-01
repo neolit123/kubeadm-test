@@ -35,6 +35,8 @@ const (
 	FlagMinVersion = "min-version"
 	// FlagToken ...
 	FlagToken = "token"
+	// FlagBranch ...
+	FlagBranch = "branch"
 	// FlagPrefixBranch ...
 	FlagPrefixBranch = "branch-prefix"
 	// FlagOutput ...
@@ -69,6 +71,8 @@ func SetupFlags(d *Data, fs *flag.FlagSet, flags []string) {
 			fs.StringVar(&d.MinVersion, FlagMinVersion, "", "All versions for tags and branches older than this SemVer will be ignored")
 		case FlagToken:
 			fs.StringVar(&d.Token, FlagToken, "", "Token to use for authentication with the GitHub API. Write permissions are required for the destination repository")
+		case FlagBranch:
+			fs.StringVar(&d.Branch, FlagBranch, "", "Branch to use in the format \"prefixMAJOR.MINOR\" or \"master\"")
 		case FlagPrefixBranch:
 			fs.StringVar(&d.PrefixBranch, FlagPrefixBranch, PrefixBranch, "Branch name prefix. Expected format is \"prefixMAJOR.MINOR\"")
 		case FlagOutput:
