@@ -28,15 +28,22 @@ if [[ -z "$KUBE_GIT_VERSION" ]]; then
   if [[ $(git rev-parse --is-inside-work-tree 2> /dev/null) == "true" ]]; then
     echo "* running in a git repository"
 
-    # Get the latest tag based on the current branch
+    # Get the current branch
     git_branch=$(git rev-parse --abbrev-ref HEAD)
     if [[ $git_branch == "master" ]]; then
-      # If on the master branch get the newest tag
-      latest_tag=$(git for-each-ref refs/tags --sort=-taggerdate --format='%(refname)' --count=1 | cut -d '/' -f 3)
+      branch_flag=""
     else
-      # If on a release branch get the newest tag for this release
-      git_branch=${git_branch#"release-"}
-      latest_tag=$(git for-each-ref refs/tags --sort=-taggerdate --format='%(refname)' | cut -d '/' -f 3 | grep "$git_branch" | head -n 1)
+      branch_flag=$git_branch
+    fi
+
+    # Use the k8s-latest-version tool to find the latest tag for this branch
+    echo "* obtaining the latest tag for branch '$git_branch'"
+    pushd "$script_path"/../k8s-repo-tools/cmd/k8s-latest-version > /dev/null
+    latest_tag=$(git tag | go run main.go --branch="$branch_flag")
+    popd > /dev/null
+    if [[ -z "$latest_tag" ]]; then
+      echo "error: could not obtain the latest tag using k8s-latest-version"
+      exit 1
     fi
 
     # Count the number of commits since the latest tag and get the short SHA
