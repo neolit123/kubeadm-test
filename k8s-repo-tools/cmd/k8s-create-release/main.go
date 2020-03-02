@@ -26,7 +26,7 @@ import (
 
 func printUsage() {
 	out := os.Stderr
-	fmt.Fprintln(out, "k8s-create-release is a tool for creating a GitHub release\n"+
+	fmt.Fprintln(out, "k8s-create-release is a tool for creating a GitHub release"+
 		"from a tag with a changelog and assets")
 	fmt.Fprintln(out, "\nusage:")
 	fmt.Fprintf(out, "  k8s-create-release -dest=org/repo -token=<token> -release-tag=<tag> <options>\n\n")

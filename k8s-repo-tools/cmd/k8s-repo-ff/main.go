@@ -26,7 +26,7 @@ import (
 
 func printUsage() {
 	out := os.Stderr
-	fmt.Fprintln(out, "k8s-repo-ff is a tool for fast-forwarding a release branch\n"+
+	fmt.Fprintln(out, "k8s-repo-ff is a tool for fast-forwarding a release branch"+
 		"to the master branch of a GitHub repository")
 	fmt.Fprintln(out, "\nusage:")
 	fmt.Fprintf(out, "  k8s-repo-ff -dest=org/repo -token=<token> <options>\n\n")

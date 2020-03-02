@@ -26,7 +26,7 @@ import (
 
 func printUsage() {
 	out := os.Stderr
-	fmt.Fprintln(out, "k8s-repo-sync is a tool for synchronizing tags and branches\n"+
+	fmt.Fprintln(out, "k8s-repo-sync is a tool for synchronizing tags and branches "+
 		"between GitHub repositories")
 	fmt.Fprintln(out, "\nusage:")
 	fmt.Fprintf(out, "  k8s-repo-sync -source=org/repo -dest=org/repo "+
