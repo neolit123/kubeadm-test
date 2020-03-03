@@ -141,6 +141,7 @@ kube::version::load_version_vars() {
     return 1
   }
 
+  # shellcheck disable=SC1090
   source "${version_file}"
 }
 
