@@ -129,7 +129,7 @@ func ValidateEmptyOption(option, value string) error {
 // ValidateReleaseTag validates if a tag is SemVer.
 func ValidateReleaseTag(option, value string) error {
 	if _, err := version.ParseSemantic(value); err != nil {
-		return err
+		return errors.Wrap(err, "cannot validate release tag")
 	}
 	return nil
 }

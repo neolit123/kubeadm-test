@@ -72,6 +72,16 @@ func GitHubCreateRef(d *Data, repo, ref, sha string, dryRun bool) (*github.Refer
 	return &newRef, err
 }
 
+// GitHubGetRef obtains a Reference from a GitHub repository.
+func GitHubGetRef(d *Data, repo, ref string) (*github.Reference, error) {
+	ownerRepo := strings.Split(repo, "/")
+	ctx, cancel := d.CreateContext()
+	defer cancel()
+	Logf("getting ref %q from repository %q", ref, repo)
+	r, _, err := d.client.Git.GetRef(ctx, ownerRepo[0], ownerRepo[1], ref)
+	return r, err
+}
+
 // GitHubCreateNewBranches goes trough a list of branches and creates them
 // based on the HEAD of the master branch.
 func GitHubCreateNewBranches(
