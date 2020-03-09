@@ -38,29 +38,14 @@ func process(d *pkg.Data) error {
 		outputPath = d.ReleaseNotesPath
 	} else if len(d.ReleaseNotesToolPath) != 0 {
 
-		// Find the reference of the user provided release tag.
-		ref, err := pkg.GitHubGetRef(d, d.Dest, "refs/tags/"+d.ReleaseTag)
-		if err != nil {
-			return err
-		}
-
-		// Fetch all tag references for the destination repository.
-		refs, err := pkg.GitHubGetTags(d, d.Dest)
-		if err != nil {
-			return err
-		}
-
-		// Find which reference to use for the end tag.
-		endRef, err := pkg.FindReleaseNotesSinceRef(ref, refs)
+		// Get the start and end SHA to use for the release notes tool.
+		startSHA, endSHA, err := getReleaseNotesToolSHAs(d)
 		if err != nil {
 			return err
 		}
 
 		// Run the release notes tool.
-		outputPath, err = runGenerateReleaseNotes(d,
-			ref.GetObject().GetSHA(),
-			endRef.GetObject().GetSHA(),
-		)
+		outputPath, err = runGenerateReleaseNotes(d, startSHA, endSHA)
 		if len(outputPath) != 0 {
 			defer os.Remove(outputPath)
 		}
@@ -107,6 +92,33 @@ func process(d *pkg.Data) error {
 		pkg.Warningf("no release assets were provided using --%s; skipping upload", pkg.FlagReleaseAsset)
 	}
 	return nil
+}
+
+func getReleaseNotesToolSHAs(d *pkg.Data) (string, string, error) {
+	pkg.Logf("finding which commits to use for the release notes tool")
+
+	// Find the reference of the user provided release tag.
+	ref, err := pkg.GitHubGetRef(d, d.Dest, "refs/tags/"+d.ReleaseTag)
+	if err != nil {
+		return "", "", err
+	}
+
+	// Fetch all tag references for the destination repository.
+	refs, err := pkg.GitHubGetTags(d, d.Dest)
+	if err != nil {
+		return "", "", err
+	}
+
+	// Find which reference to use for the end tag.
+	endRef, err := pkg.FindReleaseNotesSinceRef(ref, refs)
+	if err != nil {
+		return "", "", err
+	}
+
+	startSHA := ref.GetObject().GetSHA()
+	endSHA := endRef.GetObject().GetSHA()
+	pkg.Logf("found start SHA %s and end SHA %s", startSHA, endSHA)
+	return startSHA, endSHA, nil
 }
 
 func runGenerateReleaseNotes(d *pkg.Data, startSHA, endSHA string) (string, error) {
