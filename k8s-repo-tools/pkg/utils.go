@@ -240,8 +240,9 @@ func ShowPrompt(message string) (bool, error) {
 	return false, nil
 }
 
-// FindReleaseNotesSinceRef takes a k8s release SemVer tag and determines
-// the release SemVer tag which to use for a release notes range.
+// FindReleaseNotesSinceRef takes a k8s release SemVer tag reference and determines
+// the release SemVer tag which to use for a release notes range from a list of
+// tag references.
 // Note that nil can be returned even for err != nil.
 //
 // This logic needs to be adapted if the k8s release process changes.
