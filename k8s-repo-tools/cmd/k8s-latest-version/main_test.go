@@ -84,7 +84,7 @@ func TestProcess(t *testing.T) {
 			data: &pkg.Data{
 				PrefixBranch: pkg.PrefixBranch,
 			},
-			expectedOutput: "v1.16",
+			expectedOutput: "1.16",
 		},
 		{
 			name:  "invalid: cannot parse SemVer from branch",
