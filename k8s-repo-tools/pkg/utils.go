@@ -257,7 +257,8 @@ func ShowPrompt(message string) (bool, error) {
 //
 func FindReleaseNotesSinceRef(ref *github.Reference, refs []*github.Reference) (*github.Reference, error) {
 	var err error
-	ver, err := version.ParseSemantic(ref.GetRef())
+	tag := strings.TrimPrefix(ref.GetRef(), "refs/tags/")
+	ver, err := version.ParseSemantic(tag)
 	if err != nil {
 		return nil, err
 	}
