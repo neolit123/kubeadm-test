@@ -81,12 +81,8 @@ func process(d *pkg.Data) error {
 
 	// Upload the release assets if such are provided.
 	if len(d.ReleaseAssets) > 0 {
-		if d.DryRun {
-			pkg.Logf("%s: would upload the following artifacts to the release:\n%v", pkg.PrefixDryRun, d.ReleaseAssets)
-		} else {
-			if err = pkg.GitHubUploadReleaseAssets(d, d.Dest, release, d.ReleaseAssets); err != nil {
-				return err
-			}
+		if err = pkg.GitHubUploadReleaseAssets(d, d.Dest, release, d.ReleaseAssets, d.DryRun); err != nil {
+			return err
 		}
 	} else {
 		pkg.Warningf("no release assets were provided using --%s; skipping upload", pkg.FlagReleaseAsset)

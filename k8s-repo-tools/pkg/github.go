@@ -223,7 +223,7 @@ func GitHubGetCreateRelease(d *Data, repo, tag string, body string, dryRun bool)
 }
 
 // GitHubUploadReleaseAssets uploads files to a GitHub repository.
-func GitHubUploadReleaseAssets(d *Data, repo string, release *github.RepositoryRelease, assetsMap map[string]string) error {
+func GitHubUploadReleaseAssets(d *Data, repo string, release *github.RepositoryRelease, am assetMap, dryRun bool) error {
 	ownerRepo := strings.Split(repo, "/")
 	id := release.GetID()
 
@@ -240,7 +240,7 @@ func GitHubUploadReleaseAssets(d *Data, repo string, release *github.RepositoryR
 
 	// Only upload new files.
 	assetsNew := map[string]string{}
-	for k, v := range assetsMap {
+	for k, v := range am {
 		exists := false
 		for _, a := range assets {
 			if k == a.GetName() {
@@ -253,6 +253,11 @@ func GitHubUploadReleaseAssets(d *Data, repo string, release *github.RepositoryR
 			continue
 		}
 		assetsNew[k] = v
+	}
+
+	if dryRun {
+		Logf("%s: would upload the following artifacts to the release:\n%v", PrefixDryRun, assetsNew)
+		return nil
 	}
 
 	for k, v := range assetsNew {
