@@ -81,7 +81,7 @@ func process(d *pkg.Data) error {
 
 	// Upload the release assets if such are provided.
 	if len(d.ReleaseAssets) > 0 {
-		if err = pkg.GitHubUploadReleaseAssets(d, d.Dest, release, d.ReleaseAssets, d.DryRun); err != nil {
+		if _, err = pkg.GitHubUploadReleaseAssets(d, d.Dest, release, d.ReleaseAssets, d.DryRun); err != nil {
 			return err
 		}
 	} else {

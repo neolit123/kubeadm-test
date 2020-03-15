@@ -379,3 +379,67 @@ func NewReleaseHandler(releases *[]*github.RepositoryRelease, methodErrors map[s
 		}
 	}
 }
+
+// NewReleaseAssetsHandler creates a HTTPHandler function that manages ReleaseAssets for a RepositoryRelease.
+func NewReleaseAssetsHandler(release *github.RepositoryRelease, methodErrors map[string]bool) HTTPHandler {
+	return func(req *http.Request) (*http.Response, error) {
+		// Unescape '%2F' -> '/'
+		url := strings.Replace(req.URL.String(), "%2F", "/", -1)
+
+		// Return an early error if methodErrors matches the Method of this http.Request.
+		if val, ok := methodErrors[req.Method]; ok && val {
+			msg := fmt.Sprintf("simulating error for method %q to URL %q", req.Method, url)
+			Logf(msg)
+			return nil, errors.New(msg)
+		}
+
+		switch req.Method {
+		case http.MethodGet: // Handle GET
+
+			buf, err := json.Marshal(release.Assets)
+			if err != nil {
+				return nil, err
+			}
+
+			// GitHub always returns 200 even if a release has no assets.
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       ioutil.NopCloser(bytes.NewBuffer(buf)),
+				Header:     http.Header{},
+			}, nil
+
+		case http.MethodPost: // Handle POST
+
+			// Make sure the URL contains '?name=somename'
+			panicMsg := fmt.Sprintf("asset upload URL %q does not contain '?name=somename'", url)
+			urlSplit := strings.Split(url, "?")
+			if len(urlSplit) != 2 {
+				panic(panicMsg)
+			}
+			nameValue := strings.Split(urlSplit[1], "=")
+			if len(nameValue) != 2 {
+				panic(panicMsg)
+			}
+			releaseAsset := github.ReleaseAsset{Name: github.String(nameValue[1])}
+
+			// Simulate a POST by appending to the managed list.
+			Logf("simulating method %q with status %d to URL %q with; release asset %+v",
+				req.Method, http.StatusOK, url, releaseAsset)
+			release.Assets = append(release.Assets, releaseAsset)
+
+			buf, err := json.Marshal(releaseAsset)
+			if err != nil {
+				return nil, err
+			}
+
+			return &http.Response{
+				StatusCode: http.StatusCreated,
+				Body:       ioutil.NopCloser(bytes.NewBuffer(buf)),
+				Header:     http.Header{},
+			}, nil
+
+		default:
+			panic(fmt.Sprintf("unhandled HTTP method %q", req.Method))
+		}
+	}
+}

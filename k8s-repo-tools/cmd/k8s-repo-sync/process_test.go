@@ -190,7 +190,7 @@ func TestProcess(t *testing.T) {
 					tt.methodErrorsDest = map[string]bool{}
 				}
 
-				// create fake client and setup endpoint handlers
+				// Create fake client and setup endpoint handlers.
 				pkg.NewClient(tt.data, pkg.NewTransport())
 				const (
 					testRefsSrc  = "https://api.github.com/repos/org/src/git/refs"
