@@ -291,3 +291,91 @@ func NewMergeHandler(mergeRequest *github.RepositoryMergeRequest, status int, me
 		}
 	}
 }
+
+// NewReleaseHandler creates a HTTPHandler function that manages a list of GitHub RepositoryReleases.
+func NewReleaseHandler(releases *[]*github.RepositoryRelease, methodErrors map[string]bool) HTTPHandler {
+	return func(req *http.Request) (*http.Response, error) {
+		// Unescape '%2F' -> '/'
+		url := strings.Replace(req.URL.String(), "%2F", "/", -1)
+
+		// Return an early error if methodErrors matches the Method of this http.Request.
+		if val, ok := methodErrors[req.Method]; ok && val {
+			msg := fmt.Sprintf("simulating error for method %q to URL %q", req.Method, url)
+			Logf(msg)
+			return nil, errors.New(msg)
+		}
+
+		switch req.Method {
+		case http.MethodGet: // Handle GET
+
+			requestedTag := strings.Split(url, "tags/")[1]
+
+			var release *github.RepositoryRelease
+			for _, rel := range *releases {
+				if requestedTag == rel.GetTagName() { // Only match releases by tag
+					release = rel
+					break
+				}
+			}
+
+			if release == nil {
+				Logf("simulating method %q with status %d from URL %q", req.Method, http.StatusNotFound, url)
+				return &http.Response{
+					StatusCode: http.StatusNotFound,
+					Body:       ioutil.NopCloser(bytes.NewBuffer([]byte(`{"message":"","documentation_url":""}`))),
+					Header:     http.Header{},
+				}, nil
+			}
+
+			buf, err := json.Marshal(release)
+			if err != nil {
+				return nil, err
+			}
+
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       ioutil.NopCloser(bytes.NewBuffer(buf)),
+				Header:     http.Header{},
+			}, nil
+
+		case http.MethodPost: // Handle POST
+
+			body, err := ioutil.ReadAll(req.Body)
+			if err != nil {
+				return nil, err
+			}
+
+			// Use referenceSubset for intermediate storage. In go-github
+			// this is done with a "repositoryReleaseRequest" structure.
+			r := releaseSubset{}
+			if err := json.Unmarshal(body, &r); err != nil {
+				return nil, err
+			}
+			newRelease := &github.RepositoryRelease{
+				TagName:    github.String(r.TagName),
+				Name:       github.String(r.Name),
+				Body:       github.String(r.Body),
+				Draft:      github.Bool(r.Draft),
+				Prerelease: github.Bool(r.Prerelease),
+			}
+
+			// Simulate a POST by appending to the managed list of releases.
+			Logf("simulating method %q with status %d to URL %q with; release\n%+v\n",
+				req.Method, http.StatusOK, url, newRelease)
+
+			buf, err := json.Marshal(newRelease)
+			if err != nil {
+				return nil, err
+			}
+
+			return &http.Response{
+				StatusCode: http.StatusOK, // Note: this status is not 200 for some operations.
+				Body:       ioutil.NopCloser(bytes.NewBuffer(buf)),
+				Header:     http.Header{},
+			}, nil
+
+		default:
+			panic(fmt.Sprintf("unhandled HTTP method %q", req.Method))
+		}
+	}
+}

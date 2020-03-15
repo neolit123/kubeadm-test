@@ -65,7 +65,7 @@ func process(d *pkg.Data) error {
 
 	// Create a release for this tag.
 	// Note: bodyStr can be empty if the release notes process was skipped.
-	release, err := pkg.GitHubGetCreateRelease(d, d.Dest, d.ReleaseTag, bodyStr)
+	release, err := pkg.GitHubGetCreateRelease(d, d.Dest, d.ReleaseTag, bodyStr, d.DryRun)
 	if err != nil {
 		return err
 	}
