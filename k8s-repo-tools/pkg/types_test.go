@@ -52,6 +52,12 @@ func TestAssetMap(t *testing.T) {
 			expectedOutput: "",
 			expectedError:  true,
 		},
+		{
+			name:           "invalid: multiple '=' found",
+			input:          []string{"foo=bar=z"},
+			expectedOutput: "",
+			expectedError:  true,
+		},
 	}
 
 	for _, tt := range tests {
