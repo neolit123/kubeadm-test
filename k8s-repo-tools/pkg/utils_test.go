@@ -18,6 +18,7 @@ package pkg
 
 import (
 	"io/ioutil"
+	"os"
 	"reflect"
 	"testing"
 
@@ -25,6 +26,8 @@ import (
 )
 
 func TestFindReleaseNotesSinceRef(t *testing.T) {
+	// Swap these two lines to enable debug logging.
+	SetLogWriters(os.Stdout, os.Stderr)
 	SetLogWriters(ioutil.Discard, ioutil.Discard)
 
 	tests := []struct {
@@ -36,107 +39,107 @@ func TestFindReleaseNotesSinceRef(t *testing.T) {
 	}{
 		{
 			name:        "valid: input is v0.0.0, return the same version",
-			ref:         &github.Reference{Ref: github.String("v0.0.0")},
-			expectedRef: &github.Reference{Ref: github.String("v0.0.0")},
+			ref:         &github.Reference{Ref: github.String("refs/tags/v0.0.0")},
+			expectedRef: &github.Reference{Ref: github.String("refs/tags/v0.0.0")},
 			refs:        []*github.Reference{},
 		},
 		{
 			name:        "valid: input is MINOR release, expect previous MINOR release",
-			ref:         &github.Reference{Ref: github.String("v1.17.0")},
-			expectedRef: &github.Reference{Ref: github.String("v1.16.0")},
+			ref:         &github.Reference{Ref: github.String("refs/tags/v1.17.0")},
+			expectedRef: &github.Reference{Ref: github.String("refs/tags/v1.16.0")},
 			refs: []*github.Reference{
-				&github.Reference{Ref: github.String("some-non-semver-ref")},
-				&github.Reference{Ref: github.String("v1.16.0")},
-				&github.Reference{Ref: github.String("v1.17.0")},
+				&github.Reference{Ref: github.String("refs/tags/some-non-semver-ref")},
+				&github.Reference{Ref: github.String("refs/tags/v1.16.0")},
+				&github.Reference{Ref: github.String("refs/tags/v1.17.0")},
 			},
 		},
 		{
 			name:        "valid: input is a MAJOR release, expect previous MINOR release",
-			ref:         &github.Reference{Ref: github.String("v2.0.0")},
-			expectedRef: &github.Reference{Ref: github.String("v1.64.0")},
+			ref:         &github.Reference{Ref: github.String("refs/tags/v2.0.0")},
+			expectedRef: &github.Reference{Ref: github.String("refs/tags/v1.64.0")},
 			refs: []*github.Reference{
-				&github.Reference{Ref: github.String("some-non-semver-ref")},
-				&github.Reference{Ref: github.String("v1.63.0")},
-				&github.Reference{Ref: github.String("v1.64.0")},
-				&github.Reference{Ref: github.String("v2.0.0")},
+				&github.Reference{Ref: github.String("refs/tags/some-non-semver-ref")},
+				&github.Reference{Ref: github.String("refs/tags/v1.63.0")},
+				&github.Reference{Ref: github.String("refs/tags/v1.64.0")},
+				&github.Reference{Ref: github.String("refs/tags/v2.0.0")},
 			},
 		},
 		{
 			name:        "valid: could not find a range reference",
-			ref:         &github.Reference{Ref: github.String("v1.23.0")},
-			expectedRef: &github.Reference{Ref: github.String("v1.23.0")},
+			ref:         &github.Reference{Ref: github.String("refs/tags/v1.23.0")},
+			expectedRef: &github.Reference{Ref: github.String("refs/tags/v1.23.0")},
 			refs: []*github.Reference{
-				&github.Reference{Ref: github.String("v1.63.0")},
+				&github.Reference{Ref: github.String("refs/tags/v1.63.0")},
 			},
 		},
 		{
 			name:        "valid: return the previous PATCH",
-			ref:         &github.Reference{Ref: github.String("v1.23.2")},
-			expectedRef: &github.Reference{Ref: github.String("v1.23.1")},
+			ref:         &github.Reference{Ref: github.String("refs/tags/v1.23.2")},
+			expectedRef: &github.Reference{Ref: github.String("refs/tags/v1.23.1")},
 			refs: []*github.Reference{
-				&github.Reference{Ref: github.String("some-non-semver-ref")},
-				&github.Reference{Ref: github.String("v1.23.2")},
-				&github.Reference{Ref: github.String("v1.23.1")},
-				&github.Reference{Ref: github.String("v1.23.0")},
+				&github.Reference{Ref: github.String("refs/tags/some-non-semver-ref")},
+				&github.Reference{Ref: github.String("refs/tags/v1.23.2")},
+				&github.Reference{Ref: github.String("refs/tags/v1.23.1")},
+				&github.Reference{Ref: github.String("refs/tags/v1.23.0")},
 			},
 		},
 		{
 			name:        "valid: alpha.0 is unhandled",
-			ref:         &github.Reference{Ref: github.String("v1.23.0-alpha.0")},
-			expectedRef: &github.Reference{Ref: github.String("v1.23.0-alpha.0")},
+			ref:         &github.Reference{Ref: github.String("refs/tags/v1.23.0-alpha.0")},
+			expectedRef: &github.Reference{Ref: github.String("refs/tags/v1.23.0-alpha.0")},
 			refs:        []*github.Reference{},
 		},
 		{
 			name:        "valid: alpha.1 should return previous MINOR",
-			ref:         &github.Reference{Ref: github.String("v1.23.0-alpha.1")},
-			expectedRef: &github.Reference{Ref: github.String("v1.22.0")},
+			ref:         &github.Reference{Ref: github.String("refs/tags/v1.23.0-alpha.1")},
+			expectedRef: &github.Reference{Ref: github.String("refs/tags/v1.22.0")},
 			refs: []*github.Reference{
-				&github.Reference{Ref: github.String("v1.23.0-alpha.0")},
-				&github.Reference{Ref: github.String("v1.23.0")},
-				&github.Reference{Ref: github.String("v1.22.0")},
+				&github.Reference{Ref: github.String("refs/tags/v1.23.0-alpha.0")},
+				&github.Reference{Ref: github.String("refs/tags/v1.23.0")},
+				&github.Reference{Ref: github.String("refs/tags/v1.22.0")},
 			},
 		},
 		{
 			name:        "valid: alpha.1 should return previous MINOR (with MAJOR handling)",
-			ref:         &github.Reference{Ref: github.String("v2.0.0-alpha.1")},
-			expectedRef: &github.Reference{Ref: github.String("v1.23.0")},
+			ref:         &github.Reference{Ref: github.String("refs/tags/v2.0.0-alpha.1")},
+			expectedRef: &github.Reference{Ref: github.String("refs/tags/v1.23.0")},
 			refs: []*github.Reference{
-				&github.Reference{Ref: github.String("v2.0.0-alpha.0")},
-				&github.Reference{Ref: github.String("v2.0.0-alpha.1")},
-				&github.Reference{Ref: github.String("v1.23.0")},
-				&github.Reference{Ref: github.String("v1.22.0")},
+				&github.Reference{Ref: github.String("refs/tags/v2.0.0-alpha.0")},
+				&github.Reference{Ref: github.String("refs/tags/v2.0.0-alpha.1")},
+				&github.Reference{Ref: github.String("refs/tags/v1.23.0")},
+				&github.Reference{Ref: github.String("refs/tags/v1.22.0")},
 			},
 		},
 		{
 			name:        "valid: other pre-releases should return the previous pre-release[1]",
-			ref:         &github.Reference{Ref: github.String("v1.23.0-beta.0")},
-			expectedRef: &github.Reference{Ref: github.String("v1.23.0-alpha.3")},
+			ref:         &github.Reference{Ref: github.String("refs/tags/v1.23.0-beta.0")},
+			expectedRef: &github.Reference{Ref: github.String("refs/tags/v1.23.0-alpha.3")},
 			refs: []*github.Reference{
-				&github.Reference{Ref: github.String("some-non-semver-ref")},
-				&github.Reference{Ref: github.String("v1.23.0-beta.0")},
-				&github.Reference{Ref: github.String("v1.23.0-alpha.3")},
-				&github.Reference{Ref: github.String("v1.22.0-rc.2")},
-				&github.Reference{Ref: github.String("v1.22.0-rc.1")},
+				&github.Reference{Ref: github.String("refs/tags/some-non-semver-ref")},
+				&github.Reference{Ref: github.String("refs/tags/v1.23.0-beta.0")},
+				&github.Reference{Ref: github.String("refs/tags/v1.23.0-alpha.3")},
+				&github.Reference{Ref: github.String("refs/tags/v1.22.0-rc.2")},
+				&github.Reference{Ref: github.String("refs/tags/v1.22.0-rc.1")},
 			},
 		},
 		{
 			name:        "valid: other pre-releases should return the previous pre-release[2]",
-			ref:         &github.Reference{Ref: github.String("v1.24.0-rc.1")},
-			expectedRef: &github.Reference{Ref: github.String("v1.24.0-beta.1")},
+			ref:         &github.Reference{Ref: github.String("refs/tags/v1.24.0-rc.1")},
+			expectedRef: &github.Reference{Ref: github.String("refs/tags/v1.24.0-beta.1")},
 			refs: []*github.Reference{
-				&github.Reference{Ref: github.String("v1.24.0-beta.1")},
-				&github.Reference{Ref: github.String("v1.24.0-alpha.3")},
-				&github.Reference{Ref: github.String("v1.24.0-alpha.2")},
+				&github.Reference{Ref: github.String("refs/tags/v1.24.0-beta.1")},
+				&github.Reference{Ref: github.String("refs/tags/v1.24.0-alpha.3")},
+				&github.Reference{Ref: github.String("refs/tags/v1.24.0-alpha.2")},
 			},
 		},
 		{
 			name:          "valid: bad pre-release format should return error",
-			ref:           &github.Reference{Ref: github.String("v1.23.0-alpha:0")},
+			ref:           &github.Reference{Ref: github.String("refs/tags/v1.23.0-alpha:0")},
 			expectedError: true,
 		},
 		{
 			name:          "invalid: input is not SemVer",
-			ref:           &github.Reference{Ref: github.String("v11111")},
+			ref:           &github.Reference{Ref: github.String("refs/tags/v11111")},
 			expectedError: true,
 		},
 	}

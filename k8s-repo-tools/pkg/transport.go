@@ -87,35 +87,46 @@ func NewClient(d *Data, t *Transport) {
 // NewReferenceHandler creates a HTTPHandler function that manages a list of GitHub References.
 func NewReferenceHandler(refs *[]*github.Reference, methodErrors map[string]bool) HTTPHandler {
 	return func(req *http.Request) (*http.Response, error) {
+		// Unescape '%2F' -> '/'
+		url := strings.Replace(req.URL.String(), "%2F", "/", -1)
 
 		// Return an early error if methodErrors matches the Method of this http.Request.
 		if val, ok := methodErrors[req.Method]; ok && val {
-			msg := fmt.Sprintf("simulating error for method %q to URL %q", req.Method, req.URL.String())
+			msg := fmt.Sprintf("simulating error for method %q to URL %q", req.Method, url)
 			Logf(msg)
 			return nil, errors.New(msg)
 		}
 
 		switch req.Method {
 		case http.MethodGet: // Handle GET
-			url := req.URL.String()
 			filteredRefs := []*github.Reference{}
 
 			// Determine if this is a call to get tags or branches.
 			getTags := strings.HasSuffix(url, "tags")
 			getBranches := strings.HasSuffix(url, "heads")
+			specificRef := strings.Split(url, "git/")[1]
+			var foundSpecificRef bool
 			for _, ref := range *refs {
-				if getTags && strings.HasPrefix(ref.GetRef(), "refs/tags") {
+				r := ref.GetRef()
+				if r == specificRef {
+					foundSpecificRef = true
 					filteredRefs = append(filteredRefs, ref)
+					break
 				}
-				if getBranches && strings.HasPrefix(ref.GetRef(), "refs/heads") {
+				if getTags && strings.HasPrefix(r, "refs/tags") {
 					filteredRefs = append(filteredRefs, ref)
+					continue
+				}
+				if getBranches && strings.HasPrefix(r, "refs/heads") {
+					filteredRefs = append(filteredRefs, ref)
+					continue
 				}
 			}
 
 			// If no refs are found return a 404 without an error.
 			// This is something the go-github also does as per the GitHub API.
 			if len(filteredRefs) == 0 {
-				Logf("simulating method %q with status %d from URL %q", req.Method, http.StatusNotFound, req.URL.String())
+				Logf("simulating method %q with status %d from URL %q", req.Method, http.StatusNotFound, url)
 				return &http.Response{
 					StatusCode: http.StatusNotFound,
 					Body:       ioutil.NopCloser(bytes.NewBuffer([]byte(""))),
@@ -124,8 +135,14 @@ func NewReferenceHandler(refs *[]*github.Reference, methodErrors map[string]bool
 			}
 
 			// Simulate a GET by writing the list of filtered refs to the response body.
-			Logf("simulating method %q with status %d from URL %q", req.Method, http.StatusOK, req.URL.String())
-			buf, err := json.Marshal(filteredRefs)
+			Logf("simulating method %q with status %d from URL %q", req.Method, http.StatusOK, url)
+			var buf []byte
+			var err error
+			if foundSpecificRef {
+				buf, err = json.Marshal(filteredRefs[0])
+			} else {
+				buf, err = json.Marshal(filteredRefs)
+			}
 			if err != nil {
 				return nil, err
 			}
@@ -157,7 +174,7 @@ func NewReferenceHandler(refs *[]*github.Reference, methodErrors map[string]bool
 
 			// Simulate a POST by appending to the managed list of refs.
 			Logf("simulating method %q with status %d to URL %q with; ref %q with sha %q",
-				req.Method, http.StatusOK, req.URL.String(), r.Ref, r.SHA)
+				req.Method, http.StatusOK, url, r.Ref, r.SHA)
 			*refs = append(*refs, newRef)
 
 			return &http.Response{
@@ -265,6 +282,94 @@ func NewMergeHandler(mergeRequest *github.RepositoryMergeRequest, status int, me
 
 			return &http.Response{
 				StatusCode: status,
+				Body:       ioutil.NopCloser(bytes.NewBuffer(buf)),
+				Header:     http.Header{},
+			}, nil
+
+		default:
+			panic(fmt.Sprintf("unhandled HTTP method %q", req.Method))
+		}
+	}
+}
+
+// NewReleaseHandler creates a HTTPHandler function that manages a list of GitHub RepositoryReleases.
+func NewReleaseHandler(releases *[]*github.RepositoryRelease, methodErrors map[string]bool) HTTPHandler {
+	return func(req *http.Request) (*http.Response, error) {
+		// Unescape '%2F' -> '/'
+		url := strings.Replace(req.URL.String(), "%2F", "/", -1)
+
+		// Return an early error if methodErrors matches the Method of this http.Request.
+		if val, ok := methodErrors[req.Method]; ok && val {
+			msg := fmt.Sprintf("simulating error for method %q to URL %q", req.Method, url)
+			Logf(msg)
+			return nil, errors.New(msg)
+		}
+
+		switch req.Method {
+		case http.MethodGet: // Handle GET
+
+			requestedTag := strings.Split(url, "tags/")[1]
+
+			var release *github.RepositoryRelease
+			for _, rel := range *releases {
+				if requestedTag == rel.GetTagName() { // Only match releases by tag
+					release = rel
+					break
+				}
+			}
+
+			if release == nil {
+				Logf("simulating method %q with status %d from URL %q", req.Method, http.StatusNotFound, url)
+				return &http.Response{
+					StatusCode: http.StatusNotFound,
+					Body:       ioutil.NopCloser(bytes.NewBuffer([]byte(`{"message":"","documentation_url":""}`))),
+					Header:     http.Header{},
+				}, nil
+			}
+
+			buf, err := json.Marshal(release)
+			if err != nil {
+				return nil, err
+			}
+
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       ioutil.NopCloser(bytes.NewBuffer(buf)),
+				Header:     http.Header{},
+			}, nil
+
+		case http.MethodPost: // Handle POST
+
+			body, err := ioutil.ReadAll(req.Body)
+			if err != nil {
+				return nil, err
+			}
+
+			// Use referenceSubset for intermediate storage. In go-github
+			// this is done with a "repositoryReleaseRequest" structure.
+			r := releaseSubset{}
+			if err := json.Unmarshal(body, &r); err != nil {
+				return nil, err
+			}
+			newRelease := &github.RepositoryRelease{
+				TagName:    github.String(r.TagName),
+				Name:       github.String(r.Name),
+				Body:       github.String(r.Body),
+				Draft:      github.Bool(r.Draft),
+				Prerelease: github.Bool(r.Prerelease),
+			}
+
+			// Simulate a POST by appending to the managed list of releases.
+			Logf("simulating method %q with status %d to URL %q with; release\n%+v\n",
+				req.Method, http.StatusOK, url, newRelease)
+
+			buf, err := json.Marshal(newRelease)
+			if err != nil {
+				return nil, err
+			}
+
+			return &http.Response{
+				StatusCode: http.StatusOK, // Note: this status is not 200 for some operations.
 				Body:       ioutil.NopCloser(bytes.NewBuffer(buf)),
 				Header:     http.Header{},
 			}, nil

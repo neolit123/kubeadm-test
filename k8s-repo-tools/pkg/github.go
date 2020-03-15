@@ -176,7 +176,7 @@ func GitHubMergeBranch(d *Data, repo, base, head, commitMessage string) (*github
 
 // GitHubGetCreateRelease first checks if a tag exists and obtains a release from this tag.
 // If the tag is missing return an error. If the release is missing create it.
-func GitHubGetCreateRelease(d *Data, repo, tag string, body string) (*github.RepositoryRelease, error) {
+func GitHubGetCreateRelease(d *Data, repo, tag string, body string, dryRun bool) (*github.RepositoryRelease, error) {
 	ownerRepo := strings.Split(repo, "/")
 
 	Logf("checking if tag %q exists", tag)
@@ -191,17 +191,15 @@ func GitHubGetCreateRelease(d *Data, repo, tag string, body string) (*github.Rep
 	ctx, cancel = d.CreateContext()
 	defer cancel()
 	release, resp, err := d.client.Repositories.GetReleaseByTag(ctx, ownerRepo[0], ownerRepo[1], tag)
-	if resp.StatusCode != http.StatusNotFound {
-		return release, err
+	if resp.StatusCode == http.StatusOK {
+		return release, nil
 	}
-	if err != nil {
+	// Don't treat "not found" as an error
+	if resp.StatusCode != http.StatusNotFound && err != nil {
 		return nil, err
 	}
 
-	Logf("creating release for tag %q", tag)
-	ctx, cancel = d.CreateContext()
-	defer cancel()
-	rel := github.RepositoryRelease{
+	release = &github.RepositoryRelease{
 		TagName:    github.String(tag),
 		Name:       github.String(tag),
 		Body:       github.String(body),
@@ -209,7 +207,15 @@ func GitHubGetCreateRelease(d *Data, repo, tag string, body string) (*github.Rep
 		Prerelease: github.Bool(false),
 	}
 
-	release, _, err = d.client.Repositories.CreateRelease(ctx, ownerRepo[0], ownerRepo[1], &rel)
+	if dryRun {
+		Logf("%s: would create a release for tag %q in repository %q", PrefixDryRun, tag, repo)
+		return release, nil
+	}
+
+	Logf("creating release for tag %q", tag)
+	ctx, cancel = d.CreateContext()
+	defer cancel()
+	release, _, err = d.client.Repositories.CreateRelease(ctx, ownerRepo[0], ownerRepo[1], release)
 	if err != nil {
 		return nil, err
 	}

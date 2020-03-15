@@ -17,14 +17,13 @@ limitations under the License.
 package main
 
 import (
-	// "fmt"
+	"fmt"
 	"io/ioutil"
-	// "net/http"
+	"net/http"
 	"os"
-	// "reflect"
 	"testing"
 
-	// "github.com/google/go-github/v29/github"
+	"github.com/google/go-github/v29/github"
 	"k8s.io/kubeadm/k8s-repo-tools/pkg"
 )
 
@@ -33,188 +32,104 @@ func TestGetReleaseNotesToolSHAs(t *testing.T) {
 	pkg.SetLogWriters(os.Stdout, os.Stderr)
 	pkg.SetLogWriters(ioutil.Discard, ioutil.Discard)
 
-	/*
-		tests := []struct {
-			name             string
-			data             *pkg.Data
-			refsSrc          []*github.Reference
-			refsDest         []*github.Reference
-			expectedRefs     []*github.Reference
-			methodErrorsSrc  map[string]bool
-			methodErrorsDest map[string]bool
-			skipDryRun       bool
-			expectedError    bool
-		}{
-			{
-				name: "valid: new branches and tags",
-				data: &pkg.Data{MinVersion: "v1.16.1"},
-				refsSrc: []*github.Reference{
-					&github.Reference{Ref: github.String("refs/tags/v1.15.1"), Object: &github.GitObject{SHA: github.String("1234567890")}},
-					&github.Reference{Ref: github.String("refs/tags/v1.16.2"), Object: &github.GitObject{SHA: github.String("1234567890")}},
-					&github.Reference{Ref: github.String("refs/tags/v1.16.3"), Object: &github.GitObject{SHA: github.String("1234567890")}},
-					&github.Reference{Ref: github.String("refs/tags/v1.17.1"), Object: &github.GitObject{SHA: github.String("1234567890")}},
-					&github.Reference{Ref: github.String("refs/tags/v1.17.2"), Object: &github.GitObject{SHA: github.String("1234567890")}},
-					&github.Reference{Ref: github.String("refs/heads/master"), Object: &github.GitObject{SHA: github.String("1234567890")}},
-					&github.Reference{Ref: github.String("refs/heads/release-1.16"), Object: &github.GitObject{SHA: github.String("1234567890")}},
-					&github.Reference{Ref: github.String("refs/heads/release-1.17"), Object: &github.GitObject{SHA: github.String("1234567890")}},
-				},
-				refsDest: []*github.Reference{
-					&github.Reference{Ref: github.String("refs/heads/master"), Object: &github.GitObject{SHA: github.String("0000")}},
-				},
-				expectedRefs: []*github.Reference{
-					&github.Reference{Ref: github.String("refs/heads/release-1.16"), Object: &github.GitObject{SHA: github.String("0000")}},
-					&github.Reference{Ref: github.String("refs/heads/release-1.17"), Object: &github.GitObject{SHA: github.String("0000")}},
-					&github.Reference{Ref: github.String("refs/tags/v1.16.2"), Object: &github.GitObject{SHA: github.String("0000")}},
-					&github.Reference{Ref: github.String("refs/tags/v1.16.3"), Object: &github.GitObject{SHA: github.String("0000")}},
-					&github.Reference{Ref: github.String("refs/tags/v1.17.1"), Object: &github.GitObject{SHA: github.String("0000")}},
-					&github.Reference{Ref: github.String("refs/tags/v1.17.2"), Object: &github.GitObject{SHA: github.String("0000")}},
-				},
+	tests := []struct {
+		name             string
+		data             *pkg.Data
+		refs             []*github.Reference
+		expectedStartSHA string
+		expectedEndSHA   string
+		methodErrors     map[string]bool
+		skipDryRun       bool // Not really needed here, but can still catch future divergence
+		expectedError    bool
+	}{
+		{
+			name: "valid: found start SHA and end SHA for a MINOR release",
+			data: &pkg.Data{ReleaseTag: "v1.16.0"},
+			refs: []*github.Reference{
+				&github.Reference{Ref: github.String("refs/tags/v1.17.0"), Object: &github.GitObject{SHA: github.String("1234567890")}},
+				&github.Reference{Ref: github.String("refs/tags/v1.16.0"), Object: &github.GitObject{SHA: github.String("1234567891")}},
+				&github.Reference{Ref: github.String("refs/tags/v1.15.0"), Object: &github.GitObject{SHA: github.String("1234567892")}},
 			},
-			{
-				name: "valid: new tag with min version",
-				data: &pkg.Data{MinVersion: "v1.17.2"},
-				refsSrc: []*github.Reference{
-					&github.Reference{Ref: github.String("refs/tags/v1.17.2"), Object: &github.GitObject{SHA: github.String("1234567890")}},
-					&github.Reference{Ref: github.String("refs/tags/v1.17.2-rc.1"), Object: &github.GitObject{SHA: github.String("1234567890")}},
-					&github.Reference{Ref: github.String("refs/heads/master"), Object: &github.GitObject{SHA: github.String("1234567890")}},
-					&github.Reference{Ref: github.String("refs/heads/release-1.17"), Object: &github.GitObject{SHA: github.String("1234567890")}},
-					&github.Reference{Ref: github.String("refs/heads/release-1.16"), Object: &github.GitObject{SHA: github.String("1234567890")}},
-				},
-				refsDest: []*github.Reference{
-					&github.Reference{Ref: github.String("refs/heads/master"), Object: &github.GitObject{SHA: github.String("1234567890")}},
-					&github.Reference{Ref: github.String("refs/heads/release-1.17"), Object: &github.GitObject{SHA: github.String("17")}},
-				},
-				expectedRefs: []*github.Reference{
-					&github.Reference{Ref: github.String("refs/tags/v1.17.2"), Object: &github.GitObject{SHA: github.String("17")}},
-				},
+			expectedStartSHA: "1234567891",
+			expectedEndSHA:   "1234567892",
+		},
+		{
+			name: "valid: expect start and end SHA to match for an alpha.0 release",
+			data: &pkg.Data{ReleaseTag: "v1.17.0-alpha.0"},
+			refs: []*github.Reference{
+				&github.Reference{Ref: github.String("refs/tags/v1.17.0-alpha.0"), Object: &github.GitObject{SHA: github.String("1234567890")}},
 			},
-			{
-				name: "valid: no new tags due to min version filtering",
-				data: &pkg.Data{MinVersion: "v1.17.3"},
-				refsSrc: []*github.Reference{
-					&github.Reference{Ref: github.String("refs/tags/v1.17.2"), Object: &github.GitObject{SHA: github.String("1234567890")}},
-					&github.Reference{Ref: github.String("refs/tags/v1.17.1"), Object: &github.GitObject{SHA: github.String("1234567890")}},
-					&github.Reference{Ref: github.String("refs/heads/master"), Object: &github.GitObject{SHA: github.String("1234567890")}},
-					&github.Reference{Ref: github.String("refs/heads/release-1.17"), Object: &github.GitObject{SHA: github.String("1234567890")}},
-				},
-				refsDest: []*github.Reference{
-					&github.Reference{Ref: github.String("refs/heads/master"), Object: &github.GitObject{SHA: github.String("1234567890")}},
-					&github.Reference{Ref: github.String("refs/heads/release-1.17"), Object: &github.GitObject{SHA: github.String("1234567890")}},
-				},
-				expectedRefs: []*github.Reference{},
+			expectedStartSHA: "1234567890",
+			expectedEndSHA:   "1234567890",
+		},
+		{
+			name: "invalid: no matching ref for tag",
+			data: &pkg.Data{ReleaseTag: "v1.16.0"},
+			refs: []*github.Reference{
+				&github.Reference{Ref: github.String("refs/tags/v1.15.0"), Object: &github.GitObject{SHA: github.String("1234567892")}},
 			},
-			{
-				name: "valid: non-version tags and branches are ignored",
-				data: &pkg.Data{MinVersion: "v1.17.0"},
-				refsSrc: []*github.Reference{
-					&github.Reference{Ref: github.String("refs/tags/foo"), Object: &github.GitObject{SHA: github.String("1234567890")}},
-					&github.Reference{Ref: github.String("refs/tags/bar"), Object: &github.GitObject{SHA: github.String("1234567890")}},
-					&github.Reference{Ref: github.String("refs/tags/v1.17.1"), Object: &github.GitObject{SHA: github.String("1234567890")}},
-					&github.Reference{Ref: github.String("refs/heads/master"), Object: &github.GitObject{SHA: github.String("1234567890")}},
-					&github.Reference{Ref: github.String("refs/heads/foo"), Object: &github.GitObject{SHA: github.String("1234567890")}},
-					&github.Reference{Ref: github.String("refs/heads/release-foo"), Object: &github.GitObject{SHA: github.String("1234567890")}},
-					&github.Reference{Ref: github.String("refs/heads/release-1.17"), Object: &github.GitObject{SHA: github.String("1234567890")}},
-				},
-				refsDest: []*github.Reference{
-					&github.Reference{Ref: github.String("refs/heads/master"), Object: &github.GitObject{SHA: github.String("1234567890")}},
-					&github.Reference{Ref: github.String("refs/heads/test-branch"), Object: &github.GitObject{SHA: github.String("1234567890")}},
-				},
-				expectedRefs: []*github.Reference{
-					&github.Reference{Ref: github.String("refs/heads/release-1.17"), Object: &github.GitObject{SHA: github.String("1234567890")}},
-					&github.Reference{Ref: github.String("refs/tags/v1.17.1"), Object: &github.GitObject{SHA: github.String("1234567890")}},
-				},
+			expectedError: true,
+		},
+		{
+			name: "invalid: expect error on non-SemVer tag",
+			data: &pkg.Data{ReleaseTag: "foo"},
+			refs: []*github.Reference{
+				&github.Reference{Ref: github.String("refs/tags/v1.17.0"), Object: &github.GitObject{SHA: github.String("1234567890")}},
 			},
-			{
-				name: "invalid: dest repo missing master branch",
-				data: &pkg.Data{MinVersion: "v1.17.0"},
-				refsSrc: []*github.Reference{
-					&github.Reference{Ref: github.String("refs/tags/v1.17.2"), Object: &github.GitObject{SHA: github.String("1234567890")}},
-					&github.Reference{Ref: github.String("refs/tags/v1.17.1"), Object: &github.GitObject{SHA: github.String("1234567890")}},
-					&github.Reference{Ref: github.String("refs/heads/master"), Object: &github.GitObject{SHA: github.String("1234567890")}},
-					&github.Reference{Ref: github.String("refs/heads/release-1.17"), Object: &github.GitObject{SHA: github.String("1234567890")}},
-				},
-				refsDest:      []*github.Reference{},
-				expectedError: true,
+			expectedError: true,
+		},
+		{
+			name: "invalid: expect error on simulated 404 GET",
+			data: &pkg.Data{ReleaseTag: "v1.17.0"},
+			refs: []*github.Reference{
+				&github.Reference{Ref: github.String("refs/tags/v1.17.0"), Object: &github.GitObject{SHA: github.String("1234567890")}},
 			},
-			{
-				name:            "invalid: cannot get refs from source repo",
-				data:            &pkg.Data{MinVersion: "v1.17.0"},
-				refsSrc:         []*github.Reference{},
-				refsDest:        []*github.Reference{},
-				methodErrorsSrc: map[string]bool{http.MethodGet: true},
-				expectedError:   true,
-			},
-			{
-				name:             "invalid: cannot get refs from destination repo",
-				data:             &pkg.Data{MinVersion: "v1.17.0"},
-				refsSrc:          []*github.Reference{},
-				refsDest:         []*github.Reference{},
-				methodErrorsDest: map[string]bool{http.MethodGet: true},
-				expectedError:    true,
-			},
-			{
-				name: "invalid: cannot post refs to destination repo",
-				data: &pkg.Data{MinVersion: "v1.17.0"},
-				refsSrc: []*github.Reference{
-					&github.Reference{Ref: github.String("refs/tags/v1.17.2"), Object: &github.GitObject{SHA: github.String("1234567890")}},
-				},
-				refsDest: []*github.Reference{
-					&github.Reference{Ref: github.String("refs/heads/master"), Object: &github.GitObject{SHA: github.String("0000")}},
-				},
-				methodErrorsDest: map[string]bool{http.MethodPost: true},
-				expectedError:    true,
-				skipDryRun:       true,
-			},
+			methodErrors:  map[string]bool{http.MethodGet: true},
+			expectedError: true,
+		},
+	}
+
+	// Make sure there are consistent results between dry-run and regular mode.
+	for _, dryRunVal := range []bool{false, true} {
+		for _, tt := range tests {
+			t.Run(fmt.Sprintf("%s (dryRun=%v)", tt.name, dryRunVal), func(t *testing.T) {
+				// Some operations like POST will always return non-error in dry-run mode.
+				// Skip such tests.
+				if tt.skipDryRun && dryRunVal {
+					t.Skip()
+				}
+
+				// Override/hardcode some values.
+				tt.data.Dest = "org/dest"
+				tt.data.PrefixBranch = pkg.PrefixBranch
+				tt.data.Force = true
+				tt.data.DryRun = dryRunVal
+
+				if tt.methodErrors == nil {
+					tt.methodErrors = map[string]bool{}
+				}
+
+				// create fake client and setup endpoint handlers
+				pkg.NewClient(tt.data, pkg.NewTransport())
+				const testRefs = "https://api.github.com/repos/org/dest/git/refs"
+				handler := pkg.NewReferenceHandler(&tt.refs, tt.methodErrors)
+				tt.data.Transport.SetHandler(testRefs, handler)
+
+				startSHA, endSHA, err := getReleaseNotesToolSHAs(tt.data)
+				if (err != nil) != tt.expectedError {
+					t.Errorf("expected error %v, got %v, error: %v", tt.expectedError, err != nil, err)
+				}
+				if err != nil {
+					return
+				}
+
+				if startSHA != tt.expectedStartSHA {
+					t.Errorf("expected start SHA %s, got %s", tt.expectedStartSHA, startSHA)
+				}
+				if endSHA != tt.expectedEndSHA {
+					t.Errorf("expected end SHA %s, got %s", tt.expectedEndSHA, endSHA)
+				}
+			})
 		}
-
-		// Make sure there are consistent results between dry-run and regular mode.
-		for _, dryRunVal := range []bool{false, true} {
-			for _, tt := range tests {
-				t.Run(fmt.Sprintf("%s (dryRun=%v)", tt.name, dryRunVal), func(t *testing.T) {
-					// Some operations like POST will always return non-error in dry-run mode.
-					// Skip such tests.
-					if tt.skipDryRun && dryRunVal {
-						t.Skip()
-					}
-
-					// Override/hardcode some values.
-					tt.data.Source = "org/src"
-					tt.data.Dest = "org/dest"
-					tt.data.PrefixBranch = pkg.PrefixBranch
-					tt.data.Force = true
-					tt.data.DryRun = dryRunVal
-
-					if tt.methodErrorsSrc == nil {
-						tt.methodErrorsSrc = map[string]bool{}
-					}
-					if tt.methodErrorsDest == nil {
-						tt.methodErrorsDest = map[string]bool{}
-					}
-
-					// create fake client and setup endpoint handlers
-					pkg.NewClient(tt.data, pkg.NewTransport())
-					const (
-						testRefsSrc  = "https://api.github.com/repos/org/src/git/refs"
-						testRefsDest = "https://api.github.com/repos/org/dest/git/refs"
-					)
-					handlerSrc := pkg.NewReferenceHandler(&tt.refsSrc, tt.methodErrorsSrc)
-					handlerDest := pkg.NewReferenceHandler(&tt.refsDest, tt.methodErrorsDest)
-					tt.data.Transport.SetHandler(testRefsSrc, handlerSrc)
-					tt.data.Transport.SetHandler(testRefsDest, handlerDest)
-
-					refs, err := process(tt.data)
-					if (err != nil) != tt.expectedError {
-						t.Errorf("expected error %v, got %v, error: %v", tt.expectedError, err != nil, err)
-					}
-					if err != nil {
-						return
-					}
-
-					if !reflect.DeepEqual(refs, tt.expectedRefs) {
-						t.Errorf("expected tags:\n%v\ngot:\n%v\n", tt.expectedRefs, refs)
-					}
-				})
-			}
-		}
-	*/
+	}
 }
