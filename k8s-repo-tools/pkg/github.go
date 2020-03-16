@@ -223,7 +223,7 @@ func GitHubGetCreateRelease(d *Data, repo, tag string, body string, dryRun bool)
 }
 
 // GitHubUploadReleaseAssets uploads files to a GitHub repository.
-func GitHubUploadReleaseAssets(d *Data, repo string, release *github.RepositoryRelease, assetsMap map[string]string) error {
+func GitHubUploadReleaseAssets(d *Data, repo string, release *github.RepositoryRelease, am assetMap, dryRun bool) ([]*github.ReleaseAsset, error) {
 	ownerRepo := strings.Split(repo, "/")
 	id := release.GetID()
 
@@ -234,13 +234,13 @@ func GitHubUploadReleaseAssets(d *Data, repo string, release *github.RepositoryR
 	assets, _, err := d.client.Repositories.ListReleaseAssets(ctx, ownerRepo[0], ownerRepo[1],
 		id, &github.ListOptions{Page: 1, PerPage: 250})
 	if err != nil {
-		return err
+		return nil, err
 	}
-	Logf("found %d assets", len(assets))
+	Logf("found %d existing assets", len(assets))
 
 	// Only upload new files.
 	assetsNew := map[string]string{}
-	for k, v := range assetsMap {
+	for k, v := range am {
 		exists := false
 		for _, a := range assets {
 			if k == a.GetName() {
@@ -254,12 +254,23 @@ func GitHubUploadReleaseAssets(d *Data, repo string, release *github.RepositoryR
 		}
 		assetsNew[k] = v
 	}
+	Logf("found %d new assets", len(assetsNew))
 
+	newReleaseAssets := make([]*github.ReleaseAsset, len(assetsNew))
+	var i int
 	for k, v := range assetsNew {
+		// Handle dry run.
+		if dryRun {
+			Logf("%s: would upload asset %q from path %q", PrefixDryRun, k, v)
+			newReleaseAssets[i] = &github.ReleaseAsset{Name: github.String(k)}
+			i++
+			continue
+		}
+
 		// Open the file.
 		file, err := os.Open(v)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		opt := github.UploadOptions{
@@ -270,13 +281,17 @@ func GitHubUploadReleaseAssets(d *Data, repo string, release *github.RepositoryR
 		// Upload the file as asset.
 		Logf("uploading asset %q from path %q", k, v)
 		ctx, cancel = d.CreateContext()
-		defer cancel()
-		_, _, err = d.client.Repositories.UploadReleaseAsset(ctx, ownerRepo[0], ownerRepo[1], id, &opt, file)
+		releaseAsset, _, err := d.client.Repositories.UploadReleaseAsset(ctx, ownerRepo[0], ownerRepo[1], id, &opt, file)
 		if err != nil {
+			cancel()
 			file.Close()
-			return err
+			return nil, err
 		}
+		cancel()
 		file.Close()
+		newReleaseAssets[i] = releaseAsset
+		i++
 	}
-	return nil
+	assets = append(assets, newReleaseAssets...)
+	return assets, nil
 }

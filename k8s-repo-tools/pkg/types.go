@@ -52,7 +52,7 @@ func (m *assetMap) String() string {
 func (m *assetMap) Set(value string) error {
 	kv := strings.Split(value, "=")
 	err := errors.Errorf("invalid asset format %q. Value must be formatted as 'name=path'", value)
-	if len(kv) < 2 {
+	if len(kv) != 2 {
 		return err
 	}
 	if len(kv[0]) == 0 || len(kv[1]) == 0 {

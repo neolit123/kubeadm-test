@@ -109,7 +109,7 @@ func TestGetReleaseNotesToolSHAs(t *testing.T) {
 					tt.methodErrors = map[string]bool{}
 				}
 
-				// create fake client and setup endpoint handlers
+				// Create fake client and setup endpoint handlers.
 				pkg.NewClient(tt.data, pkg.NewTransport())
 				const testRefs = "https://api.github.com/repos/org/dest/git/refs"
 				handler := pkg.NewReferenceHandler(&tt.refs, tt.methodErrors)

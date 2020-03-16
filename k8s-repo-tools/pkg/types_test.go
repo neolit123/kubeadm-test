@@ -18,6 +18,9 @@ package pkg
 
 import (
 	"io/ioutil"
+	"reflect"
+	"sort"
+	"strings"
 	"testing"
 )
 
@@ -27,30 +30,34 @@ func TestAssetMap(t *testing.T) {
 	tests := []struct {
 		name           string
 		input          []string
-		expectedOutput string
+		expectedOutput []string
 		expectedError  bool
 	}{
 		{
 			name:           "valid: a list of valid key=value pairs",
 			input:          []string{"key1=value", "key2=value"},
-			expectedOutput: "key1=value,key2=value",
+			expectedOutput: []string{"key1=value", "key2=value"},
 		},
 		{
 			name:           "valid: same keys override existing keys",
 			input:          []string{"key1=value", "key1=value"},
-			expectedOutput: "key1=value",
+			expectedOutput: []string{"key1=value"},
 		},
 		{
 			name:           "invalid: badly separated key value pair",
 			input:          []string{"key1=value", "key2-value"},
-			expectedOutput: "key1=value",
+			expectedOutput: []string{"key1=value"},
 			expectedError:  true,
 		},
 		{
-			name:           "invalid: empty key or value in pairs",
-			input:          []string{"=value", "key="},
-			expectedOutput: "",
-			expectedError:  true,
+			name:          "invalid: empty key or value in pairs",
+			input:         []string{"=value", "key="},
+			expectedError: true,
+		},
+		{
+			name:          "invalid: multiple '=' found",
+			input:         []string{"foo=bar=z"},
+			expectedError: true,
 		},
 	}
 
@@ -66,9 +73,15 @@ func TestAssetMap(t *testing.T) {
 			if (foundErr != nil) != tt.expectedError {
 				t.Errorf("expected error %v, got %v, error: %v", tt.expectedError, foundErr != nil, foundErr)
 			}
-			out := am.String()
-			if out != tt.expectedOutput {
-				t.Errorf("expected output %q, got %q", tt.expectedOutput, out)
+			if foundErr != nil {
+				return
+			}
+
+			// Turn the assetMap String() output into a slice and sort it for determinism.
+			outSlice := strings.Split(am.String(), ",")
+			sort.Strings(outSlice)
+			if !reflect.DeepEqual(outSlice, tt.expectedOutput) {
+				t.Errorf("expected output %v, got %v", tt.expectedOutput, outSlice)
 			}
 		})
 	}

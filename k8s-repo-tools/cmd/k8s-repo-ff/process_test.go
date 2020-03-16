@@ -255,7 +255,7 @@ func TestProcess(t *testing.T) {
 					tt.methodErrorsMerge = map[string]bool{}
 				}
 
-				// create fake client and setup endpoint handlers
+				// Create fake client and setup endpoint handlers.
 				pkg.NewClient(data, pkg.NewTransport())
 				const (
 					testRefs    = "https://api.github.com/repos/org/dest/git/refs"
