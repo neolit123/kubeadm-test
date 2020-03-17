@@ -34,10 +34,11 @@ SCRIPT_PATH=$(dirname "$(realpath "$0")")
 
 # create a temporary directory
 TMP_DIR=$(mktemp -d)
+echo "created temporary directory: $TMP_DIR"
 
 # cleanup
 exitHandler() (
-  echo "Cleaning up..."
+  echo "removing $TMP_DIR..."
   rm -rf "${TMP_DIR}"
 )
 trap exitHandler EXIT
@@ -48,7 +49,8 @@ pushd "${TMP_DIR}"
   https://github.com/kubernetes/release 2> /dev/null)
 pushd ./release/cmd/release-notes
 (set -x; go build)
-RELEASE_NOTES_TOOL_PATH="${TMP_DIR}/cmd/release-notes/release-notes"
+RELEASE_NOTES_TOOL_PATH="$(realpath ./release-notes)"
+echo "* using release notes tool path: $RELEASE_NOTES_TOOL_PATH"
 popd
 popd
 
