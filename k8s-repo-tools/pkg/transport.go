@@ -394,19 +394,6 @@ func NewReleaseAssetsHandler(release *github.RepositoryRelease, methodErrors map
 		}
 
 		switch req.Method {
-		case http.MethodGet: // Handle GET
-
-			buf, err := json.Marshal(release.Assets)
-			if err != nil {
-				return nil, err
-			}
-
-			// GitHub always returns 200 even if a release has no assets.
-			return &http.Response{
-				StatusCode: http.StatusOK,
-				Body:       ioutil.NopCloser(bytes.NewBuffer(buf)),
-				Header:     http.Header{},
-			}, nil
 
 		case http.MethodPost: // Handle POST
 

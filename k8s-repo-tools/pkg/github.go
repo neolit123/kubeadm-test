@@ -224,19 +224,12 @@ func GitHubGetCreateRelease(d *Data, repo, tag string, body string, dryRun bool)
 
 // GitHubUploadReleaseAssets uploads files to a GitHub repository.
 func GitHubUploadReleaseAssets(d *Data, repo string, release *github.RepositoryRelease, am assetMap, dryRun bool) ([]*github.ReleaseAsset, error) {
-	ownerRepo := strings.Split(repo, "/")
-	id := release.GetID()
-
-	// Get the existing list of assets.
-	Logf("checking for existing assets in release %q", release.GetTagName())
-	ctx, cancel := d.CreateContext()
-	defer cancel()
-	assets, _, err := d.client.Repositories.ListReleaseAssets(ctx, ownerRepo[0], ownerRepo[1],
-		id, &github.ListOptions{Page: 1, PerPage: 250})
-	if err != nil {
-		return nil, err
+	// Get the existing list of assets, but convert them to a list of pointers
+	assets := make([]*github.ReleaseAsset, len(release.Assets))
+	for i := range release.Assets {
+		assets[i] = &release.Assets[i]
 	}
-	Logf("found %d existing assets", len(assets))
+	Logf("found %d existing assets in release", len(assets))
 
 	// Only upload new files.
 	assetsNew := map[string]string{}
@@ -280,8 +273,9 @@ func GitHubUploadReleaseAssets(d *Data, repo string, release *github.RepositoryR
 
 		// Upload the file as asset.
 		Logf("uploading asset %q from path %q", k, v)
-		ctx, cancel = d.CreateContext()
-		releaseAsset, _, err := d.client.Repositories.UploadReleaseAsset(ctx, ownerRepo[0], ownerRepo[1], id, &opt, file)
+		ctx, cancel := d.CreateContext()
+		ownerRepo := strings.Split(repo, "/")
+		releaseAsset, _, err := d.client.Repositories.UploadReleaseAsset(ctx, ownerRepo[0], ownerRepo[1], release.GetID(), &opt, file)
 		if err != nil {
 			cancel()
 			file.Close()

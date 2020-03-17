@@ -223,14 +223,6 @@ func TestGitHubUploadReleaseAssets(t *testing.T) {
 			},
 		},
 		{
-			name: "invalid: simulate error when getting the list of releases",
-			release: &github.RepositoryRelease{
-				ID: github.Int64(1),
-			},
-			methodErrors:  map[string]bool{http.MethodGet: true},
-			expectedError: true,
-		},
-		{
 			name: "invalid: simulate error uploading an asset",
 			am: assetMap{
 				"foo1": "bar1",
