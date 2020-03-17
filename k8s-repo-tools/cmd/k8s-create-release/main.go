@@ -38,7 +38,7 @@ func main() {
 	pkg.SetLogWriters(os.Stdout, os.Stderr)
 
 	// Initialize the main data structure.
-	d := pkg.Data{}
+	d := pkg.NewData()
 
 	// Manage flags and source.
 	flag.Usage = printUsage
@@ -54,11 +54,11 @@ func main() {
 		pkg.FlagReleaseNotesToolPath,
 		pkg.FlagReleaseAsset,
 	}
-	pkg.SetupFlags(&d, flag.CommandLine, flagList)
+	pkg.SetupFlags(d, flag.CommandLine, flagList)
 	flag.Parse()
 
 	// Validate the user parameters.
-	if err := validateData(&d); err != nil {
+	if err := validateData(d); err != nil {
 		pkg.PrintErrorAndExit(err)
 	}
 
@@ -69,8 +69,8 @@ func main() {
 		pkg.PrintSeparator()
 	}
 
-	pkg.NewClient(&d, nil)
-	err := process(&d)
+	pkg.NewClient(d, nil)
+	err := process(d)
 	if err != nil {
 		pkg.PrintErrorAndExit(err)
 	}

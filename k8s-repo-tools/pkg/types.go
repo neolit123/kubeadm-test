@@ -86,6 +86,11 @@ type Data struct {
 	Transport *Transport
 }
 
+// NewData creates an instance of the Data structure.
+func NewData() *Data {
+	return &Data{ReleaseAssets: assetMap{}}
+}
+
 // CreateContext can be used to create a new Go context with a timeout
 // from data#timeout.
 func (d *Data) CreateContext() (context.Context, context.CancelFunc) {
