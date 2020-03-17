@@ -9,10 +9,11 @@ jobs:
   k8s-create-release:
     runs-on: ubuntu-18.04
     steps:
-    - uses: actions/checkout@v2
-      with:
-        ref: 'master'
-        fetch-depth: '0'
+    - run: |
+        git version
+        cd /home/runner/work/kubeadm-test/kubeadm-test
+        rm -rf ./*
+        git clone https://github.com/${{ github.repository }} ./
     - uses: actions/setup-go@v1
       with:
         go-version: '1.13.6'
