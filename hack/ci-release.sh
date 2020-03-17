@@ -75,6 +75,7 @@ done <<< "$ASSETS"
 # "timeout" affects artifact upload timeout as well!
 # shellcheck disable=SC2086
 "${CREATE_RELEASE_PATH}" \
+  -dry-run=false \
   -force \
   -token "${TOKEN}" \
   -dest "${DEST}" \
@@ -82,4 +83,3 @@ done <<< "$ASSETS"
   -release-notes-tool-path "${RELEASE_NOTES_TOOL_PATH}" \
   -timeout "5m" \
   ${ASSETS_FLAGS}
-  
