@@ -20,6 +20,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	"k8s.io/kubeadm/k8s-repo-tools/pkg"
 )
@@ -56,6 +57,9 @@ func main() {
 	}
 	pkg.SetupFlags(d, flag.CommandLine, flagList)
 	flag.Parse()
+
+	// Trim 'refs/tags/' from the ReleaseTag.
+	d.ReleaseTag = strings.TrimPrefix(d.ReleaseTag, "refs/tags/")
 
 	// Validate the user parameters.
 	if err := validateData(d); err != nil {
