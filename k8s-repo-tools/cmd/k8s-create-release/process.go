@@ -72,7 +72,7 @@ func process(d *pkg.Data) error {
 
 	// Build the release if a build command was provided.
 	if len(d.BuildCommand) != 0 {
-		if err := runCommand(d.BuildCommand, d.DryRun); err != nil {
+		if err := runCommand(d.BuildCommand, []string{}, d.DryRun); err != nil {
 			return err
 		}
 	} else {
@@ -139,13 +139,13 @@ func runGenerateReleaseNotes(d *pkg.Data, startSHA, endSHA string) (string, erro
 		"--github-repo=" + ownerRepo[1],
 		"--toc",
 	}
-	if err := runCommand(d.ReleaseNotesToolPath, d.DryRun, args...); err != nil {
+	if err := runCommand(d.ReleaseNotesToolPath, []string{"GITHUB_TOKEN=" + d.Token}, d.DryRun, args...); err != nil {
 		return "", err
 	}
 	return outputPath, nil
 }
 
-func runCommand(cmdPath string, dryRun bool, args ...string) error {
+func runCommand(cmdPath string, environment []string, dryRun bool, args ...string) error {
 	if dryRun {
 		pkg.Logf("%s: would run command: %s", pkg.PrefixDryRun, cmdPath)
 		pkg.Logf("%s: using arguments: %v", pkg.PrefixDryRun, args)
@@ -158,7 +158,7 @@ func runCommand(cmdPath string, dryRun bool, args ...string) error {
 	stdout, stderr := pkg.GetLogWriters()
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
-	cmd.Env = os.Environ()
+	cmd.Env = append(os.Environ(), environment...)
 	if err := cmd.Run(); err != nil {
 		return err
 	}
