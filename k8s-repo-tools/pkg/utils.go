@@ -318,7 +318,7 @@ func FindReleaseNotesSinceRef(ref *github.Reference, refs []*github.Reference) (
 	}
 exit:
 	if result == nil {
-		Warningf("could not find a release notes range reference for %v; returning the same reference", ref)
+		Warningf("could not find a release notes range based on reference %q; returning the same reference", ref.GetRef())
 		result = ref
 	}
 	return result, nil
