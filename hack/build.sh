@@ -105,7 +105,10 @@ function build_os() {
     if [[ $tarball == true ]]; then
         local asset="$APP_NAME-$os-$arch.tar.gz"
         (set -x; tar -C ./_output/"$os/$arch" -czvf ./_output/assets/"$asset" "$APP_NAME$ext" > /dev/null)
-        (set -x; sha256sum ./_output/assets/"$asset" > ./_output/assets/"$asset.sha256")
+        pushd ./_output/assets/ > /dev/null
+        (set -x; sha256sum "./$asset" > "./$asset.sha256")
+        (set -x; sha256sum --check "./$asset.sha256")
+        popd > /dev/null
     fi
   done
 }
