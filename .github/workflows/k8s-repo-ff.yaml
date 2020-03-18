@@ -3,7 +3,7 @@ on:
   repository_dispatch:
     types: dispatch-k8s-repo-ff
   schedule:
-    - cron: '0 11 * * *'
+    - cron: '0 10 * * *'
 jobs:
   k8s-repo-ff:
     runs-on: ubuntu-18.04
