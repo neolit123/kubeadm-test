@@ -108,6 +108,6 @@ Example output:
       "url":"https://api.github.com/repos/kubernetes/kubernetes/git/tags/02a9c9f39a18ee40c37835c36c7c80e0797b0d85"
     },
     "node_id":"MDM6UmVmMjA1ODA0OTg6djEuMTcuMA=="
-  },
+  }
 ]
 ```
