@@ -15,8 +15,8 @@ jobs:
     - run: |
         cd ./k8s-repo-tools/
         go run ./cmd/k8s-repo-sync \
-          --dest=neolit123/kubeadm-test \
           --source=kubernetes/kubernetes \
+          --dest=${{ github.repository }} \
           --token=${{ secrets.GITHUB_TOKEN }} \
           --min-version=v1.18.0-alpha.3 \
           --dry-run=false \
@@ -26,3 +26,8 @@ jobs:
       with:
         name: output.json
         path: ./k8s-repo-tools/output.json
+    - run: |
+        export TOKEN=${{ secrets.GITHUB_TOKEN }}
+        export DEST=${{ github.repository }}
+        export SYNC_OUTPUT=./k8s-repo-tools/output.json
+        ./hack/ci-dispatch-release.sh
