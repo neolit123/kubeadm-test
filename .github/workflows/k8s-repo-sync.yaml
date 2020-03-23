@@ -27,7 +27,7 @@ jobs:
         name: output.json
         path: ./k8s-repo-tools/output.json
     - run: |
-        export TOKEN=${{ secrets.GITHUB_TOKEN }}
+        export TOKEN=${{ secrets.TOKEN_SECRET }}
         export DEST=${{ github.repository }}
         export SYNC_OUTPUT=./k8s-repo-tools/output.json
         ./hack/ci-dispatch-release.sh
