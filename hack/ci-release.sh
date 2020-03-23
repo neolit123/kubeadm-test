@@ -54,6 +54,12 @@ echo "* using release notes tool path: $RELEASE_NOTES_TOOL_PATH"
 popd
 popd
 
+# build the "create-release" tool (from the master branch)
+pushd "${SCRIPT_PATH}/../k8s-repo-tools/cmd/k8s-create-release"
+CREATE_RELEASE_PATH="${TMP_DIR}/k8s-create-release"
+(set -x; go build -o "${CREATE_RELEASE_PATH}")
+popd
+
 # checkout the right branch
 VER=$(echo "${RELEASE_TAG}" | cut -d '/' -f 3 | cut -d 'v' -f 2)
 VER_MAJOR=$(echo "$VER" | cut -d '.' -f 1)
@@ -68,12 +74,6 @@ fi
 MAKEFILE_PATH="${SCRIPT_PATH}/../Makefile"
 (set -x; make -f "${MAKEFILE_PATH}" clean)
 (set -x; make -f "${MAKEFILE_PATH}" release)
-
-# build the "create-release" tool
-pushd "${SCRIPT_PATH}/../k8s-repo-tools/cmd/k8s-create-release"
-CREATE_RELEASE_PATH="${TMP_DIR}/k8s-create-release"
-(set -x; go build -o "${CREATE_RELEASE_PATH}")
-popd
 
 # prepare the asset flags
 ASSETS_PATH="$(realpath "${SCRIPT_PATH}/../_output/assets")"
