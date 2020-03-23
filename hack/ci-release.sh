@@ -54,6 +54,16 @@ echo "* using release notes tool path: $RELEASE_NOTES_TOOL_PATH"
 popd
 popd
 
+# checkout the right branch
+VER=$(echo "${RELEASE_TAG}" | cut -d '/' -f 3 | cut -d 'v' -f 2)
+VER_MAJOR=$(echo "$VER" | cut -d '.' -f 1)
+VER_MINOR=$(echo "$VER" | cut -d '.' -f 2)
+BRANCH_VER="release-$VER_MAJOR.$VER_MINOR"
+echo "* will check if branch $BRANCH_VER exists"
+if ! git checkout "$BRANCH_VER" 2> /dev/null; then
+  git checkout master
+fi
+
 # build all release artifacts
 MAKEFILE_PATH="${SCRIPT_PATH}/../Makefile"
 (set -x; make -f "${MAKEFILE_PATH}" clean)

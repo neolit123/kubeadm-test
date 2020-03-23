@@ -38,7 +38,7 @@ set -x
 curl --version
 REFS=$(jq -c ".[]" < "$SYNC_OUTPUT")
 EVENT_TYPE="dispatch-k8s-create-release"
-RELEASE_REF="release_ref"
+RELEASE_TAG="release_tag"
 set +x
 
 while IFS= read -r ref; do
@@ -57,6 +57,6 @@ while IFS= read -r ref; do
   curl -H "Accept: application/vnd.github.everest-preview+json" \
     -H "Authorization: token $TOKEN" \
     --request POST \
-    --data "{\"event_type\": \"$EVENT_TYPE\", \"client_payload\": {\"$RELEASE_REF\": \"$ref\"}}" \
+    --data "{\"event_type\": \"$EVENT_TYPE\", \"client_payload\": {\"$RELEASE_TAG\": \"$ref\"}}" \
     https://api.github.com/repos/"$DEST"/dispatches
 done <<< "$REFS"

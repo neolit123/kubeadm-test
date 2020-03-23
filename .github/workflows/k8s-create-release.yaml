@@ -15,7 +15,7 @@ jobs:
       with:
         go-version: '1.13.6'
     - run: |
-        export RELEASE_TAG=${{ github.event.client_payload.release_ref }}
+        export RELEASE_TAG=${{ github.event.client_payload.release_tag }}
         export TOKEN=${{ secrets.GITHUB_TOKEN }}
         export DEST=${{ github.repository }}
         ./hack/ci-release.sh
