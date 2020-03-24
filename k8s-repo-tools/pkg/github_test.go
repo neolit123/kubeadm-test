@@ -73,6 +73,21 @@ func TestGitHubGetCreateRelease(t *testing.T) {
 			},
 		},
 		{
+			name: "valid: release is missing; create it from this tag (pre-release)",
+			data: &Data{ReleaseTag: "v1.16.0-rc.1"},
+			refs: []*github.Reference{
+				&github.Reference{Ref: github.String("refs/tags/v1.16.0-rc.1"), Object: &github.GitObject{SHA: github.String("1234567890")}},
+			},
+			releaseBody: "foo",
+			expectedRelease: &github.RepositoryRelease{
+				TagName:    github.String("v1.16.0-rc.1"),
+				Name:       github.String("v1.16.0-rc.1"),
+				Body:       github.String("foo"),
+				Draft:      github.Bool(false),
+				Prerelease: github.Bool(true),
+			},
+		},
+		{
 			name: "invalid: fail creating release",
 			data: &Data{ReleaseTag: "v1.16.0"},
 			refs: []*github.Reference{

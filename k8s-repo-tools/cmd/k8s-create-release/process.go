@@ -73,7 +73,7 @@ func process(d *pkg.Data) error {
 	}
 
 	// Prompt the user about creating a release.
-	promptMessage = fmt.Sprintf("Do you want to create a release for tag %q?",
+	promptMessage = fmt.Sprintf("Do you want to create a release for tag %q if it does not exist already?",
 		d.ReleaseTag)
 	if yes, err = pkg.ShowPrompt(promptMessage); err != nil {
 		return err

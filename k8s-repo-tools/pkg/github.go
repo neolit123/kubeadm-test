@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/google/go-github/v29/github"
+	"k8s.io/apimachinery/pkg/util/version"
 )
 
 // GitHubGetRefs obtains a list of References from a GitHub repository.
@@ -199,12 +200,22 @@ func GitHubGetCreateRelease(d *Data, repo, tag string, body string, dryRun bool)
 		return nil, err
 	}
 
+	// Check if this is a pre-release
+	v, err := version.ParseSemantic(tag)
+	if err != nil {
+		return nil, err
+	}
+	var isPreRelease bool
+	if len(v.PreRelease()) > 0 {
+		isPreRelease = true
+	}
+
 	release = &github.RepositoryRelease{
 		TagName:    github.String(tag),
 		Name:       github.String(tag),
 		Body:       github.String(body),
 		Draft:      github.Bool(false),
-		Prerelease: github.Bool(false),
+		Prerelease: github.Bool(isPreRelease),
 	}
 
 	if dryRun {
