@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -63,6 +64,26 @@ func process(d *pkg.Data) error {
 		}
 	}
 
+	var promptMessage string
+	var yes bool
+
+	// Skip prompt.
+	if d.Force {
+		goto createRelease
+	}
+
+	// Prompt the user about creating a release.
+	promptMessage = fmt.Sprintf("Do you want to create a release for tag %q?",
+		d.ReleaseTag)
+	if yes, err = pkg.ShowPrompt(promptMessage); err != nil {
+		return err
+	} else if yes {
+		goto createRelease
+	}
+	return nil
+
+createRelease:
+
 	// Create a release for this tag.
 	// Note: bodyStr can be empty if the release notes process was skipped.
 	release, err := pkg.GitHubGetCreateRelease(d, d.Dest, d.ReleaseTag, bodyStr, d.DryRun)
@@ -83,6 +104,23 @@ func process(d *pkg.Data) error {
 	} else {
 		pkg.Warningf("empty --%s value; skipping build", pkg.FlagBuildCommand)
 	}
+
+	// Skip prompt.
+	if d.Force {
+		goto uploadAssets
+	}
+
+	// Prompt the user about uploading the assets.
+	promptMessage = fmt.Sprintf("Do you want to upload the given assets to release %q?",
+		d.ReleaseTag)
+	if yes, err = pkg.ShowPrompt(promptMessage); err != nil {
+		return err
+	} else if yes {
+		goto uploadAssets
+	}
+	return nil
+
+uploadAssets:
 
 	// Upload the release assets if such are provided.
 	if len(d.ReleaseAssets) > 0 {
