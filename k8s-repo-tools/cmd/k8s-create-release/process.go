@@ -72,7 +72,12 @@ func process(d *pkg.Data) error {
 
 	// Build the release if a build command was provided.
 	if len(d.BuildCommand) != 0 {
-		if err := runCommand(d.BuildCommand, []string{}, d.DryRun); err != nil {
+		buildCommmandSplit := strings.Split(d.BuildCommand, " ")
+		var args []string
+		if len(buildCommmandSplit) > 1 {
+			args = buildCommmandSplit[1:]
+		}
+		if err := runCommand(buildCommmandSplit[0], []string{}, d.DryRun, args...); err != nil {
 			return err
 		}
 	} else {

@@ -72,7 +72,7 @@ func SetupFlags(d *Data, fs *flag.FlagSet, flags []string) {
 		case FlagToken:
 			fs.StringVar(&d.Token, FlagToken, "", "Token to use for authentication with the GitHub API. Write permissions are required for the destination repository")
 		case FlagBranch:
-			fs.StringVar(&d.Branch, FlagBranch, "", "Branch to use in the format \"prefixMAJOR.MINOR\" or \"master\"")
+			fs.StringVar(&d.Branch, FlagBranch, "", "Branch to use in the format \"prefixMAJOR.MINOR\"")
 		case FlagPrefixBranch:
 			fs.StringVar(&d.PrefixBranch, FlagPrefixBranch, PrefixBranch, "Branch name prefix. Expected format is \"prefixMAJOR.MINOR\"")
 		case FlagOutput:
