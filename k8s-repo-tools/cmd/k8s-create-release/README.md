@@ -1,7 +1,7 @@
 ## Description
 
 "k8s-create-release" is a tool for creating a GitHub release
-with artififacts and release notes for Kubernetes based projects.
+with artifacts and release notes for Kubernetes based projects.
 
 ## Usage
 
