@@ -50,8 +50,8 @@ func TestGetReleaseNotesToolSHAs(t *testing.T) {
 				&github.Reference{Ref: github.String("refs/tags/v1.16.0"), Object: &github.GitObject{SHA: github.String("1234567891")}},
 				&github.Reference{Ref: github.String("refs/tags/v1.15.0"), Object: &github.GitObject{SHA: github.String("1234567892")}},
 			},
-			expectedStartSHA: "1234567891",
-			expectedEndSHA:   "1234567892",
+			expectedStartSHA: "1234567892",
+			expectedEndSHA:   "1234567891",
 		},
 		{
 			name: "valid: expect start and end SHA to match for an alpha.0 release",

@@ -19,6 +19,7 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"k8s.io/apimachinery/pkg/util/version"
 	"os"
 	"os/exec"
 	"strings"
@@ -45,8 +46,15 @@ func process(d *pkg.Data) error {
 			return err
 		}
 
+		// If a branch does not exist for this tag use "master"
+		v := version.MustParseSemantic(d.ReleaseTag)
+		branch := fmt.Sprintf("%s%d.%d", d.PrefixBranch, v.Major(), v.Minor())
+		if _, err := pkg.GitHubGetRef(d, d.Dest, "refs/heads/"+branch); err != nil {
+			branch = "master"
+		}
+
 		// Run the release notes tool.
-		outputPath, err = runGenerateReleaseNotes(d, startSHA, endSHA)
+		outputPath, err = runGenerateReleaseNotes(d, branch, startSHA, endSHA)
 		if len(outputPath) != 0 {
 			defer os.Remove(outputPath)
 		}
@@ -137,7 +145,7 @@ func getReleaseNotesToolSHAs(d *pkg.Data) (string, string, error) {
 	pkg.Logf("finding which commits to use for the release notes tool")
 
 	// Find the reference of the user provided release tag.
-	ref, err := pkg.GitHubGetRef(d, d.Dest, "refs/tags/"+d.ReleaseTag)
+	endRef, err := pkg.GitHubGetRef(d, d.Dest, "refs/tags/"+d.ReleaseTag)
 	if err != nil {
 		return "", "", err
 	}
@@ -149,18 +157,18 @@ func getReleaseNotesToolSHAs(d *pkg.Data) (string, string, error) {
 	}
 
 	// Find which reference to use for the end tag.
-	endRef, err := pkg.FindReleaseNotesSinceRef(ref, refs)
+	startRef, err := pkg.FindReleaseNotesSinceRef(endRef, refs)
 	if err != nil {
 		return "", "", err
 	}
 
-	startSHA := ref.GetObject().GetSHA()
+	startSHA := startRef.GetObject().GetSHA()
 	endSHA := endRef.GetObject().GetSHA()
 	pkg.Logf("found start SHA %s and end SHA %s", startSHA, endSHA)
 	return startSHA, endSHA, nil
 }
 
-func runGenerateReleaseNotes(d *pkg.Data, startSHA, endSHA string) (string, error) {
+func runGenerateReleaseNotes(d *pkg.Data, branch, startSHA, endSHA string) (string, error) {
 	pkg.Logf("will now run the release notes tool at %q", d.ReleaseNotesToolPath)
 
 	// Allocate a temporary file path.
@@ -180,6 +188,8 @@ func runGenerateReleaseNotes(d *pkg.Data, startSHA, endSHA string) (string, erro
 		"--output=" + outputPath,
 		"--github-org=" + ownerRepo[0],
 		"--github-repo=" + ownerRepo[1],
+		"--required-author=" + `""`,
+		"--branch=" + branch,
 		"--toc",
 	}
 	if err := runCommand(d.ReleaseNotesToolPath, []string{"GITHUB_TOKEN=" + d.Token}, d.DryRun, args...); err != nil {
