@@ -45,7 +45,7 @@ trap exitHandler EXIT
 
 # pull the kubernetes/release repository and build the release-notes tool
 pushd "${TMP_DIR}"
-(set -x; git clone --depth=1 --branch=v0.2.5 \
+(set -x; git clone --depth=1 --branch=v0.2.7 \
   https://github.com/kubernetes/release 2> /dev/null)
 pushd ./release/cmd/release-notes
 (set -x; go build)
