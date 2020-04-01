@@ -21,6 +21,11 @@ export APP_PATH := $(mkfile_dir)app
 build:
 	$(mkfile_dir)hack/build.sh build_os_default
 
+test:
+	$(mkfile_dir)hack/verify/shellcheck.sh
+	$(mkfile_dir)hack/verify/spelling.sh
+	$(mkfile_dir)hack/verify/verify-go.sh
+
 release:
 	$(mkfile_dir)hack/release.sh
 
