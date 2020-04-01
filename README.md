@@ -12,11 +12,10 @@ A Makefile with generic build / release / clean / other functionality.
 
 Scripts that are executed from CI or from the `/Makefile`
 
-
 ### /.github/workflows
 
-A set of GitHub workflows that are normally periodically executed,
-but can also be executed on demand using a GitHub Personal Access Token.
+A set of GitHub workflows that are automatically executed, but can also
+be executed on demand using a GitHub Personal Access Token.
 
 ### /k8s-repo-tools
 
