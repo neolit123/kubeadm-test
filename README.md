@@ -1,3 +1,24 @@
 # kubeadm-test
 
-A repository for testing kubeadm tools and build automation.
+A repository for testing kubeadm build tools and automation.
+
+## Contents
+
+### /Makefile
+
+A Makefile with generic build / release / clean / other functionality.
+
+### /hack
+
+Scripts that are executed from CI or from the `/Makefile`
+
+
+### /.github/workflows
+
+A set of GitHub workflows that are normally periodically executed,
+but can also be executed on demand using a GitHub Personal Access Token.
+
+### /k8s-repo-tools
+
+A collection of tools for automatic repository synchronization,
+branch fast-forward and creating releases.
