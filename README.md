@@ -8,6 +8,10 @@ A repository for testing kubeadm build tools and automation.
 
 A Makefile with generic build / release / clean / other functionality.
 
+### /app
+
+A test application to build and release.
+
 ### /hack
 
 Scripts that are executed from CI or from the `/Makefile`
