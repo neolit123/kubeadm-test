@@ -4,7 +4,7 @@
 
 This is a chron job that runs the `k8s-repo-ff` tool on a daily schedule.
 The `k8s-repo-ff` tool itself determines if it is appropriate to perform
-a fast-forward on the the latest release branch based on the latest
+a fast-forward on the latest release branch based on the latest
 tag that is in the branch.
 
 ### k8s-repo-sync.yaml
