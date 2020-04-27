@@ -25,14 +25,14 @@ import (
 func TestProcessBytes(t *testing.T) {
 	tests := []struct {
 		name               string
-		dataLocal          []byte
-		dataRemote         []byte
+		dataSource         []byte
+		dataDest           []byte
 		expectedOutputJSON string
 		expectedError      bool
 	}{
 		{
-			name: "valid: remote requires newer components",
-			dataLocal: []byte(`
+			name: "valid: dest has newer components",
+			dataSource: []byte(`
 			module k8s.io/kubeadm
 			go 1.12
 			require (
@@ -40,7 +40,7 @@ func TestProcessBytes(t *testing.T) {
 				sigs.k8s.io/yaml v1.0.0
 			)
 			`),
-			dataRemote: []byte(`
+			dataDest: []byte(`
 			module k8s.io/kubernetes
 			go 1.13
 			require (
@@ -49,73 +49,73 @@ func TestProcessBytes(t *testing.T) {
 				k8s.io/api v1.0.0
 			)
 			`),
-			expectedOutputJSON: `{"dependencies":{"Golang":{"local":"1.12","remote":"1.13"},"k8s.io/klog":{"local":"v0.8.0","remote":"v0.9.0"},"sigs.k8s.io/yaml":{"local":"v1.0.0","remote":"v1.1.0"}}}`,
+			expectedOutputJSON: `{"dependencies":{"Golang":{"source":"1.12","dest":"1.13"},"k8s.io/klog":{"source":"v0.8.0","dest":"v0.9.0"},"sigs.k8s.io/yaml":{"source":"v1.0.0","dest":"v1.1.0"}}}`,
 		},
 		{
 			name: "valid: dependency versions match",
-			dataLocal: []byte(`
+			dataSource: []byte(`
 			module k8s.io/kubeadm
 			go 1.13
 			require (
 				k8s.io/klog v0.8.0
 			)
 			`),
-			dataRemote: []byte(`
+			dataDest: []byte(`
 			module k8s.io/kubernetes
 			go 1.13
 			require (
 				k8s.io/klog v0.8.0
 			)
 			`),
-			expectedOutputJSON: `{"dependencies":{"Golang":{"local":"1.13","remote":"1.13"},"k8s.io/klog":{"local":"v0.8.0","remote":"v0.8.0"}}}`,
+			expectedOutputJSON: `{"dependencies":{"Golang":{"source":"1.13","dest":"1.13"},"k8s.io/klog":{"source":"v0.8.0","dest":"v0.8.0"}}}`,
 		},
 		{
-			name: "valid: no matching dependencies in remote",
-			dataLocal: []byte(`
+			name: "valid: no matching dependencies in dest",
+			dataSource: []byte(`
 			module k8s.io/kubeadm
 			go 1.13
 			require (
 				k8s.io/klog v0.8.0
 			)
 			`),
-			dataRemote: []byte(`
+			dataDest: []byte(`
 			module k8s.io/kubernetes
 			go 1.13
 			require (
 				k8s.io/api v1.0.0
 			)
 			`),
-			expectedOutputJSON: `{"dependencies":{"Golang":{"local":"1.13","remote":"1.13"},"k8s.io/klog":{"local":"v0.8.0","remote":""}}}`,
+			expectedOutputJSON: `{"dependencies":{"Golang":{"source":"1.13","dest":"1.13"},"k8s.io/klog":{"source":"v0.8.0","dest":""}}}`,
 		},
 		{
-			name: "valid: indirect dependenices are skipped",
-			dataLocal: []byte(`
+			name: "valid: indirect dependencies are skipped",
+			dataSource: []byte(`
 			module k8s.io/kubeadm
 			go 1.13
 			require (
 				k8s.io/klog v0.8.0 // indirect
 			)
 			`),
-			dataRemote: []byte(`
+			dataDest: []byte(`
 			module k8s.io/kubernetes
 			go 1.13
 			require (
 				k8s.io/klog v0.8.0 // indirect
 			)
 			`),
-			expectedOutputJSON: `{"dependencies":{"Golang":{"local":"1.13","remote":"1.13"}}}`,
+			expectedOutputJSON: `{"dependencies":{"Golang":{"source":"1.13","dest":"1.13"}}}`,
 		},
 		{
 			name:          "invalid: error parsing input",
-			dataLocal:     []byte(`foo`),
-			dataRemote:    []byte(`bar`),
+			dataSource:    []byte(`foo`),
+			dataDest:      []byte(`bar`),
 			expectedError: true,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			output, err := processBytes(tc.dataLocal, tc.dataRemote)
+			output, err := processBytes(tc.dataSource, tc.dataDest)
 			if (err != nil) != tc.expectedError {
 				t.Errorf("expected error: %v, got: %v, error: %v", tc.expectedError, err != nil, err)
 			}
@@ -144,9 +144,9 @@ func TestFormatOutput(t *testing.T) {
 			name: "valid: output with go version and two dependencies",
 			output: &output{
 				Dependencies: pathVersionTuple{
-					"Golang":      &versionTuple{Local: "1.12", Remote: "1.13"},
-					"k8s.io/klog": &versionTuple{Local: "v1.0.0", Remote: "v1.1.0"},
-					"github.com/someorg/someverylongnamegoeshere": &versionTuple{Local: "v1.0.0", Remote: "v1.1.0"},
+					"Golang":      &versionTuple{Source: "1.12", Dest: "1.13"},
+					"k8s.io/klog": &versionTuple{Source: "v1.0.0", Dest: "v1.1.0"},
+					"github.com/someorg/someverylongnamegoeshere": &versionTuple{Source: "v1.0.0", Dest: "v1.1.0"},
 				},
 			},
 			expectedOutput: `Comparing Go module files:
@@ -163,8 +163,8 @@ k8s.io/klog                                  v1.0.0      v1.1.0
 			name: "valid: only one dependency differs",
 			output: &output{
 				Dependencies: pathVersionTuple{
-					"Golang":      &versionTuple{Local: "1.12", Remote: "1.12"},
-					"k8s.io/klog": &versionTuple{Local: "v1.0.0", Remote: "v1.1.0"},
+					"Golang":      &versionTuple{Source: "1.12", Dest: "1.12"},
+					"k8s.io/klog": &versionTuple{Source: "v1.0.0", Dest: "v1.1.0"},
 				},
 			},
 			expectedOutput: `Comparing Go module files:
@@ -179,7 +179,7 @@ k8s.io/klog  v1.0.0      v1.1.0
 			name: "valid: only go version differs",
 			output: &output{
 				Dependencies: pathVersionTuple{
-					"Golang": &versionTuple{Local: "1.12", Remote: "1.13"},
+					"Golang": &versionTuple{Source: "1.12", Dest: "1.13"},
 				},
 			},
 			expectedOutput: `Comparing Go module files:

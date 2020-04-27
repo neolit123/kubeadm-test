@@ -38,42 +38,42 @@ func process(d *pkg.Data) (*output, error) {
 	return processBytes(dataSource, dataDest)
 }
 
-func processBytes(dataLocal, dataRemote []byte) (*output, error) {
+func processBytes(dataSource, dataDest []byte) (*output, error) {
 	m := pathVersionTuple{}
 
-	// Parse the local data.
-	modFileLocal, err := modfile.Parse("", []byte(dataLocal), nil)
+	// Parse the source data.
+	modFileSource, err := modfile.Parse("", []byte(dataSource), nil)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, r := range modFileLocal.Require {
+	for _, r := range modFileSource.Require {
 		if r.Indirect {
 			continue // Skip indirect dependencies.
 		}
-		m[r.Mod.Path] = &versionTuple{Local: r.Mod.Version}
+		m[r.Mod.Path] = &versionTuple{Source: r.Mod.Version}
 	}
 
-	// Parse the remote data.
-	modFileRemote, err := modfile.Parse("", []byte(dataRemote), nil)
+	// Parse the destination data.
+	modFileDest, err := modfile.Parse("", []byte(dataDest), nil)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, r := range modFileRemote.Require {
+	for _, r := range modFileDest.Require {
 		if r.Indirect {
 			continue // Skip indirect dependencies.
 		}
 		if _, ok := m[r.Mod.Path]; !ok {
 			continue
 		}
-		m[r.Mod.Path].Remote = r.Mod.Version
+		m[r.Mod.Path].Dest = r.Mod.Version
 	}
 
 	// Add Golang to the dependency list.
 	m["Golang"] = &versionTuple{
-		Local:  modFileLocal.Go.Version,
-		Remote: modFileRemote.Go.Version,
+		Source: modFileSource.Go.Version,
+		Dest:   modFileDest.Go.Version,
 	}
 
 	// Format output.
@@ -88,8 +88,8 @@ type output struct {
 }
 
 type versionTuple struct {
-	Local  string `json:"local"`
-	Remote string `json:"remote"`
+	Source string `json:"source"`
+	Dest   string `json:"dest"`
 }
 
 type pathVersionTuple map[string]*versionTuple
@@ -113,8 +113,8 @@ func formatOutput(w io.Writer, o *output, source, dest string) {
 	for _, k := range keys {
 		v := o.Dependencies[k]
 
-		// If the remote version is empty this means that remote is not using this dependency.
-		if v.Remote == "" || v.Local == v.Remote {
+		// If the destination version is empty, dest does not have this dependency.
+		if v.Dest == "" || v.Source == v.Dest {
 			continue
 		}
 		if !hasHeader {
@@ -123,7 +123,7 @@ func formatOutput(w io.Writer, o *output, source, dest string) {
 			fmt.Fprintln(tabW, "PATH\tSOURCE\tDEST")
 			hasHeader = true
 		}
-		fmt.Fprintf(tabW, "%s\t%s\t%s\n", k, v.Local, v.Remote)
+		fmt.Fprintf(tabW, "%s\t%s\t%s\n", k, v.Source, v.Dest)
 	}
 
 	if tabW != nil {
