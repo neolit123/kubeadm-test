@@ -19,74 +19,23 @@ package main
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
-	"net/http"
 	"sort"
 	"text/tabwriter"
-	"time"
 
-	"github.com/pkg/errors"
 	"golang.org/x/mod/modfile"
+	"k8s.io/kubeadm/k8s-repo-tools/pkg"
 )
 
-type versionTuple struct {
-	Local  string `json:"local"`
-	Remote string `json:"remote"`
-}
-
-type pathVersionTuple map[string]*versionTuple
-
-type output struct {
-	Dependencies pathVersionTuple `json:"dependencies"`
-}
-
-func formatOutput(w io.Writer, o *output, localURL, remoteURL string) {
-	var header = fmt.Sprintf("Comparing Go module files, local: %s, remote: %s\n"+
-		"The following dependency versions differ:", localURL, remoteURL)
-	var hasHeader bool
-	var tabW *tabwriter.Writer
-
-	// Store the Dependencies map keys and sort them.
-	keys := make([]string, len(o.Dependencies))
-	var i int
-	for k := range o.Dependencies {
-		keys[i] = k
-		i++
-	}
-	sort.Strings(keys)
-
-	// Loop trough the keys.
-	for _, k := range keys {
-		v := o.Dependencies[k]
-
-		// If the remote version is empty this means that remote is not using this dependency.
-		if v.Remote == "" || v.Local == v.Remote {
-			continue
-		}
-		if !hasHeader {
-			fmt.Fprintln(w, header)
-			tabW = tabwriter.NewWriter(w, 12, 0, 2, ' ', 0)
-			fmt.Fprintln(tabW, "PATH\tLOCAL\tREMOTE")
-			hasHeader = true
-		}
-		fmt.Fprintf(tabW, "%s\t%s\t%s\n", k, v.Local, v.Remote)
-	}
-
-	if tabW != nil {
-		tabW.Flush()
-	}
-}
-
-func process(urlLocal, urlRemote string) (*output, error) {
-	dataLocal, err := ReadFromURL(urlLocal, -1)
+func process(d *pkg.Data) (*output, error) {
+	dataSource, err := pkg.ReadFromFileOrURL(d.Source, d.Timeout)
 	if err != nil {
 		return nil, err
 	}
-	dataRemote, err := ReadFromURL(urlLocal, -1)
+	dataDest, err := pkg.ReadFromFileOrURL(d.Dest, d.Timeout)
 	if err != nil {
 		return nil, err
 	}
-	return processBytes(dataLocal, dataRemote)
+	return processBytes(dataSource, dataDest)
 }
 
 func processBytes(dataLocal, dataRemote []byte) (*output, error) {
@@ -134,33 +83,50 @@ func processBytes(dataLocal, dataRemote []byte) (*output, error) {
 	return o, nil
 }
 
-// ReadFromURL reads the contents of a URL and returns the data
-// as bytes. "timeout" allows passing timeout to the HTTP request.
-// If -1 is passed as "timeout" a default value is used.
-func ReadFromURL(url string, timeout time.Duration) ([]byte, error) {
-	if timeout < 0 {
-		timeout = 10 * time.Second
-	}
-	client := http.Client{Timeout: timeout}
+type output struct {
+	Dependencies pathVersionTuple `json:"dependencies"`
+}
 
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
+type versionTuple struct {
+	Local  string `json:"local"`
+	Remote string `json:"remote"`
+}
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, errors.Wrapf(err, "received status %d", resp.StatusCode)
+type pathVersionTuple map[string]*versionTuple
+
+func formatOutput(w io.Writer, o *output, source, dest string) {
+	var header = fmt.Sprintf("Comparing Go module files:\n  Source: %s\n  Destination: %s\n"+
+		"The following dependency versions differ:", source, dest)
+	var hasHeader bool
+	var tabW *tabwriter.Writer
+
+	// Store the Dependencies map keys and sort them.
+	keys := make([]string, len(o.Dependencies))
+	var i int
+	for k := range o.Dependencies {
+		keys[i] = k
+		i++
+	}
+	sort.Strings(keys)
+
+	// Loop trough the keys.
+	for _, k := range keys {
+		v := o.Dependencies[k]
+
+		// If the remote version is empty this means that remote is not using this dependency.
+		if v.Remote == "" || v.Local == v.Remote {
+			continue
+		}
+		if !hasHeader {
+			fmt.Fprintln(w, header)
+			tabW = tabwriter.NewWriter(w, 12, 0, 2, ' ', 0)
+			fmt.Fprintln(tabW, "PATH\tSOURCE\tDEST")
+			hasHeader = true
+		}
+		fmt.Fprintf(tabW, "%s\t%s\t%s\n", k, v.Local, v.Remote)
 	}
 
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, errors.Wrapf(err, "could not read response body")
+	if tabW != nil {
+		tabW.Flush()
 	}
-
-	return data, nil
 }

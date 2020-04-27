@@ -17,16 +17,65 @@ limitations under the License.
 package main
 
 import (
+	"flag"
 	"fmt"
+	"os"
+
+	"k8s.io/kubeadm/k8s-repo-tools/pkg"
 )
 
+func printUsage() {
+	out := os.Stderr
+	fmt.Fprintln(out, "k8s-gomod-diff is a tool for comparing gomod files "+
+		"and optionally printing results in GitHub issues")
+	fmt.Fprintln(out, "\nusage:")
+	fmt.Fprintf(out, "  k8s-gomod-diff -dest=some-url-or-file -source=-dest=some-url-or-file -token=<token> <options>\n\n")
+	flag.CommandLine.PrintDefaults()
+}
+
 func main() {
-	const (
-		urlA = "https://raw.githubusercontent.com/kubernetes/kubeadm/master/kinder/go.mod"
-		urlB = "https://raw.githubusercontent.com/kubernetes/kubernetes/master/go.mod"
-	)
-	if _, err := process(urlA, urlB); err != nil {
-		fmt.Println("err", err)
+	// Set the default output writers.
+	pkg.SetLogWriters(os.Stdout, os.Stderr)
+
+	// Initialize the main data structure.
+	d := pkg.Data{}
+
+	// Manage flags and source.
+	flag.Usage = printUsage
+	flag.CommandLine.SetOutput(os.Stderr)
+	flagList := []string{
+		pkg.FlagSource,
+		pkg.FlagDest,
+		pkg.FlagToken,
+		pkg.FlagDryRun,
+		pkg.FlagTargetIssue,
+		pkg.FlagTimeout,
 	}
-	fmt.Println("done")
+	fd := pkg.GetDefaultFlagDescriptions()
+	fd[pkg.FlagDest] = "Destination gomod file or URL"
+	fd[pkg.FlagSource] = "Source gomod file or URL"
+	pkg.SetupFlags(&d, flag.CommandLine, flagList, fd)
+	flag.Parse()
+
+	// Validate the user parameters.
+	if err := validateData(&d); err != nil {
+		pkg.PrintErrorAndExit(err)
+	}
+
+	// Create an HTTP client and process the data.
+	pkg.NewClient(&d, nil)
+	out, err := process(&d)
+	if err != nil {
+		pkg.Errorf(err.Error())
+	}
+
+	pkg.Logf("done!")
+
+	if len(d.TargetIssue) > 0 {
+		// if d.DryRun {
+		// TODO
+		// }
+	} else {
+		formatOutput(os.Stdout, out, d.Source, d.Dest)
+	}
 }

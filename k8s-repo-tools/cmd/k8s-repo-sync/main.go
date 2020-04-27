@@ -55,7 +55,7 @@ func main() {
 		pkg.FlagDryRun,
 		pkg.FlagForce,
 	}
-	pkg.SetupFlags(&d, flag.CommandLine, flagList)
+	pkg.SetupFlags(&d, flag.CommandLine, flagList, nil)
 	flag.Parse()
 
 	// Validate the user parameters.

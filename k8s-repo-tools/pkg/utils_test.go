@@ -156,3 +156,41 @@ func TestFindReleaseNotesSinceRef(t *testing.T) {
 		})
 	}
 }
+
+func TestIsValidURL(t *testing.T) {
+	tests := []struct {
+		name           string
+		url            string
+		expectedResult bool
+	}{
+		{
+			name:           "valid URL",
+			url:            "http://test.com/somefile",
+			expectedResult: true,
+		},
+		{
+			name:           "invalid URL",
+			url:            "test.com/somefile",
+			expectedResult: false,
+		},
+		{
+			name:           "local path",
+			url:            "./test/somefile",
+			expectedResult: false,
+		},
+		{
+			name:           "empty",
+			url:            "",
+			expectedResult: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isValidURL(tt.url)
+			if tt.expectedResult != result {
+				t.Errorf("expected result: %v, got: %v", tt.expectedResult, result)
+			}
+		})
+	}
+}

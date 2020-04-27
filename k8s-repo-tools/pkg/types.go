@@ -78,6 +78,7 @@ type Data struct {
 	ReleaseAssets        assetMap
 	BuildCommand         string
 	Timeout              time.Duration
+	TargetIssue          string
 	DryRun               bool
 	Force                bool
 

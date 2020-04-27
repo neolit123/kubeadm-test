@@ -19,8 +19,12 @@ package pkg
 import (
 	"bufio"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/google/go-github/v29/github"
 	"github.com/pkg/errors"
@@ -394,4 +398,58 @@ func FormatMergeCommitMessage(base, head string) string {
 	head = strings.TrimPrefix(head, "refs/heads/")
 	base = strings.TrimPrefix(base, "refs/heads/")
 	return fmt.Sprintf("Merge branch %q into %s", head, base)
+}
+
+// ReadFromURL reads the contents of a URL and returns the data
+// as bytes. "timeout" allows passing timeout to the HTTP request.
+// If -1 is passed as "timeout" a default value is used.
+func ReadFromURL(url string, timeout time.Duration) ([]byte, error) {
+	Logf("fetching date from %s", url)
+
+	if timeout < 0 {
+		timeout = 10 * time.Second
+	}
+	client := http.Client{Timeout: timeout}
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.Wrapf(err, "received status %d", resp.StatusCode)
+	}
+
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not read response body")
+	}
+
+	return data, nil
+}
+
+func isValidURL(s string) bool {
+	u, err := url.Parse(s)
+	if err != nil || u.Scheme == "" || u.Host == "" {
+		return false
+	}
+	return true
+}
+
+// ReadFromFileOrURL loads the data from location if its a file path or URL.
+func ReadFromFileOrURL(location string, timeout time.Duration) ([]byte, error) {
+	var err error
+	var data []byte
+
+	if isValidURL(location) {
+		data, err = ReadFromURL(location, timeout)
+	} else {
+		data, err = ioutil.ReadFile(location)
+	}
+	return data, err
 }

@@ -52,7 +52,7 @@ func main() {
 		pkg.FlagForce,
 		pkg.FlagOutput,
 	}
-	pkg.SetupFlags(&d, flag.CommandLine, flagList)
+	pkg.SetupFlags(&d, flag.CommandLine, flagList, nil)
 	flag.Parse()
 
 	// Validate the user parameters.

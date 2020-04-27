@@ -149,9 +149,11 @@ func TestFormatOutput(t *testing.T) {
 					"github.com/someorg/someverylongnamegoeshere": &versionTuple{Local: "v1.0.0", Remote: "v1.1.0"},
 				},
 			},
-			expectedOutput: `Comparing Go module files, local: https://foo, remote: https://bar
+			expectedOutput: `Comparing Go module files:
+  Source: https://foo
+  Destination: https://bar
 The following dependency versions differ:
-PATH                                         LOCAL       REMOTE
+PATH                                         SOURCE      DEST
 Golang                                       1.12        1.13
 github.com/someorg/someverylongnamegoeshere  v1.0.0      v1.1.0
 k8s.io/klog                                  v1.0.0      v1.1.0
@@ -165,9 +167,11 @@ k8s.io/klog                                  v1.0.0      v1.1.0
 					"k8s.io/klog": &versionTuple{Local: "v1.0.0", Remote: "v1.1.0"},
 				},
 			},
-			expectedOutput: `Comparing Go module files, local: https://foo, remote: https://bar
+			expectedOutput: `Comparing Go module files:
+  Source: https://foo
+  Destination: https://bar
 The following dependency versions differ:
-PATH         LOCAL       REMOTE
+PATH         SOURCE      DEST
 k8s.io/klog  v1.0.0      v1.1.0
 `,
 		},
@@ -178,9 +182,11 @@ k8s.io/klog  v1.0.0      v1.1.0
 					"Golang": &versionTuple{Local: "1.12", Remote: "1.13"},
 				},
 			},
-			expectedOutput: `Comparing Go module files, local: https://foo, remote: https://bar
+			expectedOutput: `Comparing Go module files:
+  Source: https://foo
+  Destination: https://bar
 The following dependency versions differ:
-PATH        LOCAL       REMOTE
+PATH        SOURCE      DEST
 Golang      1.12        1.13
 `,
 		},

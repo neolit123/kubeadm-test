@@ -56,7 +56,7 @@ func main() {
 		pkg.FlagReleaseNotesToolPath,
 		pkg.FlagReleaseAsset,
 	}
-	pkg.SetupFlags(d, flag.CommandLine, flagList)
+	pkg.SetupFlags(d, flag.CommandLine, flagList, nil)
 	flag.Parse()
 
 	// Trim 'refs/tags/' from the ReleaseTag.

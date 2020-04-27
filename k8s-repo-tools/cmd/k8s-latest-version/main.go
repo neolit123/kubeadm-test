@@ -52,7 +52,7 @@ func main() {
 		pkg.FlagBranch,
 		pkg.FlagPrefixBranch,
 	}
-	pkg.SetupFlags(&d, flag.CommandLine, flagList)
+	pkg.SetupFlags(&d, flag.CommandLine, flagList, nil)
 	flag.Parse()
 
 	latestTag, err := process(os.Stdin, &d)

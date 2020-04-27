@@ -57,16 +57,35 @@ const (
 	FlagBuildCommand = "build-command"
 	// FlagReleaseAsset ...
 	FlagReleaseAsset = "release-asset"
+	// FlagTargetIssue ...
+	FlagTargetIssue = ""
 )
 
+var defaultFlagDescriptions = map[string]string{
+	FlagDest:   "Destination org/repo to write tags and branches to",
+	FlagSource: "Source org/repo from which to take tags and branches",
+}
+
+// GetDefaultFlagDescriptions ...
+func GetDefaultFlagDescriptions() map[string]string {
+	result := map[string]string{}
+	for k, v := range defaultFlagDescriptions {
+		result[k] = v
+	}
+	return result
+}
+
 // SetupFlags ...
-func SetupFlags(d *Data, fs *flag.FlagSet, flags []string) {
+func SetupFlags(d *Data, fs *flag.FlagSet, flags []string, flagDescriptions map[string]string) {
+	if flagDescriptions == nil {
+		flagDescriptions = defaultFlagDescriptions
+	}
 	for _, f := range flags {
 		switch f {
 		case FlagDest:
-			fs.StringVar(&d.Dest, FlagDest, "", "Destination org/repo to write tags and branches to")
+			fs.StringVar(&d.Dest, FlagDest, "", flagDescriptions[FlagDest])
 		case FlagSource:
-			fs.StringVar(&d.Source, FlagSource, "", "Source org/repo from which to take tags and branches")
+			fs.StringVar(&d.Source, FlagSource, "", flagDescriptions[FlagSource])
 		case FlagMinVersion:
 			fs.StringVar(&d.MinVersion, FlagMinVersion, "", "All versions for tags and branches older than this SemVer will be ignored")
 		case FlagToken:
@@ -78,7 +97,7 @@ func SetupFlags(d *Data, fs *flag.FlagSet, flags []string) {
 		case FlagOutput:
 			fs.StringVar(&d.Output, FlagOutput, "", "Path to a file that will be written with a list of new tags and branches as GitHub API JSON objects")
 		case FlagTimeout:
-			fs.DurationVar(&d.Timeout, FlagTimeout, time.Second*20, "Timeout for client connections to the GitHub API")
+			fs.DurationVar(&d.Timeout, FlagTimeout, time.Second*20, "Timeout for client connections to remote servers")
 		case FlagDryRun:
 			fs.BoolVar(&d.DryRun, FlagDryRun, true, fmt.Sprintf("In %s mode repository writing operations are disabled", PrefixDryRun))
 		case FlagForce:
@@ -102,7 +121,18 @@ func ValidateRepo(option, repo string) error {
 	const orgRepo = `[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+`
 	var regexpOrgRepo = regexp.MustCompile(orgRepo)
 	if !regexpOrgRepo.MatchString(repo) {
-		return errors.Errorf("the option %q must be of the format 'org/repo' %s", option, orgRepo)
+		return errors.Errorf("the option %q must be of the format 'org/repo': %s", option, orgRepo)
+	}
+	return nil
+}
+
+// ValidateTargetIssue validates if the given issue is of format 'org/repo#issue'
+func ValidateTargetIssue(option, issue string) error {
+	const orgRepoIssue = `[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+#[1-9][0-9]+`
+	var regexporgRepoIssue = regexp.MustCompile(orgRepoIssue)
+	if !regexporgRepoIssue.MatchString(issue) {
+		return errors.Errorf("the option %q must be of the format 'org/repo#issue' "+
+			"and 'issue' must not start with '0': %s", option, issue)
 	}
 	return nil
 }
