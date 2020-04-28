@@ -62,6 +62,18 @@ func (m *assetMap) Set(value string) error {
 	return nil
 }
 
+// multiString is a type that implements the flag.Value interface
+type multiString []string
+
+func (m *multiString) String() string {
+	return strings.Join(*m, ",")
+}
+
+func (m *multiString) Set(value string) error {
+	*m = append(*m, value)
+	return nil
+}
+
 // Data is the main data structure of the application.
 type Data struct {
 	// From flags
@@ -76,6 +88,7 @@ type Data struct {
 	ReleaseNotesToolPath string
 	ReleaseNotesPath     string
 	ReleaseAssets        assetMap
+	IgnorePaths          multiString
 	BuildCommand         string
 	Timeout              time.Duration
 	TargetIssue          string
@@ -89,7 +102,10 @@ type Data struct {
 
 // NewData creates an instance of the Data structure.
 func NewData() *Data {
-	return &Data{ReleaseAssets: assetMap{}}
+	return &Data{
+		ReleaseAssets: assetMap{},
+		IgnorePaths:   multiString{},
+	}
 }
 
 // CreateContext can be used to create a new Go context with a timeout

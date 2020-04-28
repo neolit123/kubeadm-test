@@ -59,6 +59,8 @@ const (
 	FlagReleaseAsset = "release-asset"
 	// FlagTargetIssue ...
 	FlagTargetIssue = ""
+	// FlagIgnorePath ...
+	FlagIgnorePath = ""
 )
 
 var defaultFlagDescriptions = map[string]string{
@@ -112,6 +114,8 @@ func SetupFlags(d *Data, fs *flag.FlagSet, flags []string, flagDescriptions map[
 			fs.StringVar(&d.BuildCommand, FlagBuildCommand, "", "A command to execute for build the release assets")
 		case FlagReleaseAsset:
 			fs.Var(&d.ReleaseAssets, FlagReleaseAsset, "A release asset to upload to the GitHub release. Must be formatted as 'assetName=filePath'. Multiple instances of the flag are allowed")
+		case FlagIgnorePath:
+			fs.Var(&d.IgnorePaths, FlagIgnorePath, "A dependency path to ignore from the source Gomod (e.g. 'Golang', 'k8s.io/klog'). Multiple instances of the flag are allowed")
 		}
 	}
 }

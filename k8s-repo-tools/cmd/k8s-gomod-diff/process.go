@@ -26,6 +26,8 @@ import (
 	"k8s.io/kubeadm/k8s-repo-tools/pkg"
 )
 
+const golangPath = "Golang"
+
 func process(d *pkg.Data) (*output, error) {
 	dataSource, err := pkg.ReadFromFileOrURL(d.Source, d.Timeout)
 	if err != nil {
@@ -35,10 +37,10 @@ func process(d *pkg.Data) (*output, error) {
 	if err != nil {
 		return nil, err
 	}
-	return processBytes(dataSource, dataDest)
+	return processBytes(dataSource, dataDest, d.IgnorePaths)
 }
 
-func processBytes(dataSource, dataDest []byte) (*output, error) {
+func processBytes(dataSource, dataDest []byte, ignorePaths []string) (*output, error) {
 	m := pathVersionTuple{}
 
 	// Parse the source data.
@@ -51,7 +53,13 @@ func processBytes(dataSource, dataDest []byte) (*output, error) {
 		if r.Indirect {
 			continue // Skip indirect dependencies.
 		}
+		for _, ip := range ignorePaths {
+			if r.Mod.Path == ip {
+				goto skip // Skip paths that are ignored.
+			}
+		}
 		m[r.Mod.Path] = &versionTuple{Source: r.Mod.Version}
+	skip:
 	}
 
 	// Parse the destination data.
@@ -71,9 +79,18 @@ func processBytes(dataSource, dataDest []byte) (*output, error) {
 	}
 
 	// Add Golang to the dependency list.
-	m["Golang"] = &versionTuple{
-		Source: modFileSource.Go.Version,
-		Dest:   modFileDest.Go.Version,
+	var skipGolang bool
+	for _, ip := range ignorePaths {
+		if ip == golangPath {
+			skipGolang = true
+			break
+		}
+	}
+	if !skipGolang {
+		m[golangPath] = &versionTuple{
+			Source: modFileSource.Go.Version,
+			Dest:   modFileDest.Go.Version,
+		}
 	}
 
 	// Format output.

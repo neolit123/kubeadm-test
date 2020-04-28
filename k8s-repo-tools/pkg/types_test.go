@@ -86,3 +86,39 @@ func TestAssetMap(t *testing.T) {
 		})
 	}
 }
+
+func TestMultiString(t *testing.T) {
+	SetLogWriters(ioutil.Discard, ioutil.Discard)
+
+	tests := []struct {
+		name           string
+		input          []string
+		expectedOutput string
+	}{
+		{
+			name:           "valid: a single input",
+			input:          []string{"somePath1"},
+			expectedOutput: "somePath1",
+		},
+		{
+			name:           "valid: multiple inputs",
+			input:          []string{"somePath1", "somePath2"},
+			expectedOutput: "somePath1,somePath2",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := multiString{}
+			for _, i := range tt.input {
+				m.Set(i)
+			}
+
+			// Turn the multiString String() output into a slice and sort it for determinism.
+			out := m.String()
+			if out != tt.expectedOutput {
+				t.Errorf("expected output %q, got %q", tt.expectedOutput, out)
+			}
+		})
+	}
+}

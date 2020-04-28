@@ -27,6 +27,7 @@ func TestProcessBytes(t *testing.T) {
 		name               string
 		dataSource         []byte
 		dataDest           []byte
+		ignorePaths        []string
 		expectedOutputJSON string
 		expectedError      bool
 	}{
@@ -106,6 +107,27 @@ func TestProcessBytes(t *testing.T) {
 			expectedOutputJSON: `{"dependencies":{"Golang":{"source":"1.13","dest":"1.13"}}}`,
 		},
 		{
+			name:        "valid: ignored paths are skipped",
+			ignorePaths: []string{"Golang", "k8s.io/klog"},
+			dataSource: []byte(`
+			module k8s.io/kubeadm
+			go 1.13
+			require (
+				k8s.io/klog v0.8.0
+				k8s.io/api v1.0.0
+			)
+			`),
+			dataDest: []byte(`
+			module k8s.io/kubernetes
+			go 1.13
+			require (
+				k8s.io/klog v0.8.0
+				k8s.io/api v1.1.0
+			)
+			`),
+			expectedOutputJSON: `{"dependencies":{"k8s.io/api":{"source":"v1.0.0","dest":"v1.1.0"}}}`,
+		},
+		{
 			name:          "invalid: error parsing input",
 			dataSource:    []byte(`foo`),
 			dataDest:      []byte(`bar`),
@@ -115,7 +137,7 @@ func TestProcessBytes(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			output, err := processBytes(tc.dataSource, tc.dataDest)
+			output, err := processBytes(tc.dataSource, tc.dataDest, tc.ignorePaths)
 			if (err != nil) != tc.expectedError {
 				t.Errorf("expected error: %v, got: %v, error: %v", tc.expectedError, err != nil, err)
 			}
