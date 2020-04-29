@@ -70,6 +70,8 @@ func process(d *pkg.Data) error {
 		if err != nil {
 			return err
 		}
+		// Format the release in a <details> tag.
+		bodyStr = "<details><summary>Release notes</summary>\n\n" + bodyStr + "\n\n</details>"
 	}
 
 	var promptMessage string
