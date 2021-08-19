@@ -26,7 +26,9 @@ jobs:
 
             Please see:
             - https://github.com/kubernetes/kubeadm#support
-
-            /kind support
+            - uses: actions-ecosystem/action-add-labels@v1
+      - uses: actions-ecosystem/action-add-labels@v1
+        with:
+          labels: kind/support
       - name: close issue
         uses: peter-evans/close-issue@v1
