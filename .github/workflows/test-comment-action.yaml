@@ -26,7 +26,6 @@ jobs:
 
             Please see:
             - https://github.com/kubernetes/kubeadm#support
-            - uses: actions-ecosystem/action-add-labels@v1
       - uses: actions-ecosystem/action-add-labels@v1
         with:
           labels: kind/support
