@@ -21,7 +21,12 @@ jobs:
             Hello, @${{ github.event.issue.user.login }} :robot: :wave:
 
             You seem to have troubles using Kubernetes and kubeadm.
-            Note that our issue trackers are not designated for providing support to users.
+            Note that our issue trackers **should not** be used for providing support to users.
+            There are special channels for that purpose.
 
             Please see:
-              https://github.com/kubernetes/kubeadm#support
+            - https://github.com/kubernetes/kubeadm#support
+
+            /kind support
+      - name: close issue
+        uses: peter-evans/close-issue@v1
