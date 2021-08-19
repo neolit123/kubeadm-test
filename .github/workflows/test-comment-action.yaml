@@ -18,9 +18,10 @@ jobs:
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           message: |
-            Hello ${{ github.event.issue.user.login }}, you seem to have troubles
-            using Kubernetes and kubeadm. Note that our issue trackers are not designated
-            for providing support to users.
+            Hello, @${{ github.event.issue.user.login }} :robot: :wave:
+
+            You seem to have troubles using Kubernetes and kubeadm.
+            Note that our issue trackers are not designated for providing support to users.
 
             Please see:
               https://github.com/kubernetes/kubeadm#support
