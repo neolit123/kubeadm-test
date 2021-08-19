@@ -1,0 +1,19 @@
+on: issue_comment
+name: comment on /support command
+jobs:
+  support_comment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: check for the /support command
+        id: command
+        uses: xt0rted/slash-command-action@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          command: support
+          allow-edits: "true"
+          permission-level: admin
+      - name: comment with support text
+        uses: ben-z/actions-comment-on-issue@1.0.2
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          message: "Foo bar..."
