@@ -1,5 +1,5 @@
 on: issue_comment
-name: comment on /support command
+name: handle the /support command
 jobs:
   support_comment:
     runs-on: ubuntu-latest
@@ -26,7 +26,8 @@ jobs:
 
             Please see:
             - https://github.com/kubernetes/kubeadm#support
-      - uses: actions-ecosystem/action-add-labels@v1
+      - name: add support label
+        uses: actions-ecosystem/action-add-labels@v1
         with:
           labels: kind/support
       - name: close issue
