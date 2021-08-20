@@ -4,7 +4,9 @@ jobs:
   support_comment:
     runs-on: ubuntu-20.04
     if: |
-      contains(github.event.comment.body, '/support\r\n')
+      github.event_name == 'issue_comment'
+      && github.event.action == 'created'
+      && contains(github.event.comment.body, '/support\r\n')
     steps:
       - name: comment with support text
         if: steps.command.outputs.command-name
