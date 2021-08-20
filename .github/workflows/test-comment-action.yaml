@@ -3,17 +3,9 @@ name: handle the /support command
 jobs:
   support_comment:
     runs-on: ubuntu-20.04
+    if: |
+      contains(github.event.comment.body, "/support\n")
     steps:
-      - name: check for the /support command
-        id: command
-        uses: xt0rted/slash-command-action@v1
-        continue-on-error: true
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          command: support
-          reaction: "false"
-          allow-edits: "true"
-          permission-level: admin
       - name: comment with support text
         if: steps.command.outputs.command-name
         uses: ben-z/actions-comment-on-issue@1.0.2
