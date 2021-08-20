@@ -4,7 +4,7 @@ jobs:
   support_comment:
     runs-on: ubuntu-20.04
     if: |
-      contains(github.event.comment.body, "/support\n")
+      contains(github.event.comment.body, '/support\n')
     steps:
       - name: comment with support text
         if: steps.command.outputs.command-name
