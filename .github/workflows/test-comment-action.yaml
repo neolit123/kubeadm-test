@@ -15,7 +15,7 @@ jobs:
           allow-edits: "true"
           permission-level: admin
       - name: comment with support text
-        if: steps.command.outputs.command
+        if: steps.command.outputs.command-name
         uses: ben-z/actions-comment-on-issue@1.0.2
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -29,10 +29,10 @@ jobs:
             Please see:
             - https://github.com/kubernetes/kubeadm#support
       - name: add support label
-        if: steps.command.outputs.command
+        if: steps.command.outputs.command-name
         uses: actions-ecosystem/action-add-labels@v1
         with:
           labels: kind/support
       - name: close issue
-        if: steps.command.outputs.command
+        if: steps.command.outputs.command-name
         uses: peter-evans/close-issue@v1
