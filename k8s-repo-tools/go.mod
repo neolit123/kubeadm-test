@@ -7,5 +7,5 @@ require (
 	github.com/pkg/errors v0.9.1
 	golang.org/x/mod v0.2.0
 	golang.org/x/oauth2 v0.0.0-20180821212333-d2e6202438be
-	k8s.io/apimachinery v0.17.2
+	k8s.io/apimachinery v0.17.9
 )
