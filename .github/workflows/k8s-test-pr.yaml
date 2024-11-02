@@ -1,0 +1,302 @@
+name: k8s-test-pr
+run-name: '#${{ github.event.inputs.pr_number }} ${{ github.event.inputs.kinder_workflow }}'
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "PR number"
+        required: true
+        type: string
+      kinder_workflow:
+        description: "kinder workflow"
+        required: true
+        default: "presubmit-upgrade-latest.yaml"
+        type: string
+      use_init:
+        description: "Use for kubeadm init"
+        required: true
+        default: true
+        type: boolean
+      use_upgrade:
+        description: "Use for kubeadm upgrade"
+        required: true
+        default: true
+        type: boolean
+
+jobs:
+  k8s-test-pr:
+    runs-on: ubuntu-22.04
+    name: '#${{ github.event.inputs.pr_number }} ${{ github.event.inputs.kinder_workflow }}'
+
+    steps:
+      - name: Install Docker
+        run: |
+          #!/bin/bash
+
+          set -o errexit
+          set -o nounset
+          set -o pipefail
+          set -o xtrace
+
+          sudo apt-get update
+          sudo apt-get install -y \
+            ca-certificates \
+            curl \
+            gnupg \
+            lsb-release
+          sudo mkdir -p /etc/apt/keyrings
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+          echo \
+            "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+            $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+          sudo apt-get update
+
+          sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+          sudo systemctl start docker
+          sudo usermod -aG docker $USER
+          docker info
+
+      - name: Install various tools
+        run: |
+          #!/bin/bash
+
+          set -o errexit
+          set -o nounset
+          set -o pipefail
+          set -o xtrace
+
+          # Install various jq, curl.
+          sudo apt-get install -y jq curl
+          jq --version
+          curl --version
+
+          # Install yq.
+          sudo curl -sSL -o /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+          yq --version
+
+      - name: Install Golang
+        run: |
+          #!/bin/bash
+
+          set -o errexit
+          set -o nounset
+          set -o pipefail
+          set -o xtrace
+
+          # Check what go version to use from k/k.
+          GO_VERSION=$(curl -s https://raw.githubusercontent.com/kubernetes/kubernetes/refs/heads/master/build/dependencies.yaml \
+            | yq '.dependencies[] | select(.name == "golang: upstream version").version')
+
+          cd ~
+          GO_TAR="go${GO_VERSION}.linux-amd64.tar.gz"
+          GO_URL="https://go.dev/dl/${GO_TAR}"
+          curl -LO "${GO_URL}"
+          sudo rm -rf /usr/local/go
+          sudo tar -C /usr/local -xzf "${GO_TAR}"
+          echo "export PATH=/usr/local/go/bin:\$PATH" >> ~/.profile
+          source ~/.profile
+          go version
+
+      - name: Clone the PR branch
+        run: |
+          #!/bin/bash
+
+          set -o errexit
+          set -o nounset
+          set -o pipefail
+          set -o xtrace
+
+          KK="kubernetes/kubernetes"
+          PR_NUMBER="${{ github.event.inputs.pr_number }}"
+
+          set +o xtrace
+          JSON_URL="https://api.github.com/repos/$KK/pulls/$PR_NUMBER"
+          echo "PR URL: https://github.com/$KK/pull/$PR_NUMBER"
+          echo "parsing JSON: $JSON_URL"
+          JSON=$(curl -s $JSON_URL)
+          REPO=$(echo "$JSON" | jq -r '.head.repo.clone_url')
+          BRANCH_NAME=$(echo "$JSON" | jq -r '.head.ref')
+          set -o xtrace
+
+          cd ~
+          mkdir -p go/src/k8s.io
+          cd go/src/k8s.io
+          git clone --depth 1 --branch $BRANCH_NAME $REPO kubernetes
+          cd kubernetes
+
+      - name: Clone kubernetes/kubeadm
+        run: |
+          #!/bin/bash
+
+          set -o errexit
+          set -o nounset
+          set -o pipefail
+          set -o xtrace
+
+          cd ~/go/src/k8s.io
+          git clone --depth 1 https://github.com/kubernetes/kubeadm.git kubeadm
+
+      - name: Build the kubeadm binary
+        run: |
+          set -o errexit
+          set -o nounset
+          set -o pipefail
+
+          # Get the latest tag from the GitHub API, since we are cloning the repo at --depth=1.
+          TAGS=$(curl -s "https://api.github.com/repos/kubernetes/kubernetes/tags" | jq -r '.[].name')
+          LATEST_TAG=$(echo "$TAGS" | sort -V | tail -n 1)
+
+          set -o xtrace
+          cd ~/go/src/k8s.io/kubernetes
+
+          # Write a version file. This is supported by the k/k build system.
+          echo "KUBE_GIT_COMMIT="$(git rev-parse HEAD) > version
+          echo "KUBE_GIT_TREE_STATE=dirty" >> version
+          echo "KUBE_GIT_VERSION="$LATEST_TAG >> version
+          echo "KUBE_GIT_MAJOR="$(echo $LATEST_TAG | cut -d'v' -f2 | cut -d'.' -f1) >> version
+          echo "KUBE_GIT_MINOR="$(echo $LATEST_TAG | cut -d'.' -f2) >> version
+
+          make all WHAT=./cmd/kubeadm KUBE_GIT_VERSION_FILE=./version
+
+          make all WHAT=cmd/kubeadm KUBE_GIT_VERSION_FILE=version
+          mv ./_output/local/bin/linux/amd64/kubeadm ~/go/src/k8s.io/kubeadm/kinder
+
+      - name: Build test suites
+        run: |
+          #!/bin/bash
+
+          set -o errexit
+          set -o nounset
+          set -o pipefail
+          set -o xtrace
+
+          # Do this before the cluster is running to save memory / CPU.
+          cd ~/go/src/k8s.io/kubernetes
+
+          time make WHAT=vendor/github.com/onsi/ginkgo/ginkgo
+          time make WHAT=test/e2e_kubeadm/e2e_kubeadm.test
+          time make WHAT=test/e2e/e2e.test
+
+      - name: Build kinder
+        run: |
+          #!/bin/bash
+
+          set -o errexit
+          set -o nounset
+          set -o pipefail
+          set -o xtrace
+
+          cd ~/go/src/k8s.io/kubeadm/kinder
+          go build
+          sudo mv ./kinder /usr/local/bin
+          kinder version
+
+      - name: Free up space
+        run: |
+          #!/bin/bash
+
+          set -o errexit
+          set -o nounset
+          set -o pipefail
+          set -o xtrace
+
+          # The GitHub runner quickly run out of space.
+          # Leave some space for the e2e test cache.
+          df -h
+          go clean -cache -modcache -testcache
+          rm -rf ~/*.tar.gz
+          sudo rm -rf /usr/local/go
+          cd ~/go/src/k8s.io/kubernetes/_output/local/go
+          sudo rm -rf ./cache ./src ./pkg
+          cd ~/go/src/k8s.io/kubernetes
+          find . -mindepth 1 -maxdepth 1 ! -name "_output" -exec rm -rf {} +
+          df -h
+
+      - name: Build the node image
+        run: |
+          #!/bin/bash
+
+          set -o errexit
+          set -o nounset
+          set -o pipefail
+          set -o xtrace
+
+          cd ~/go/src/k8s.io/kubeadm/kinder
+
+          WORKFLOW=./ci/workflows/"${{ github.event.inputs.kinder_workflow }}"
+          TASKS_FILE=./ci/workflows/$(cat $WORKFLOW | yq '.tasks[0].import')
+
+          # Backup the task file.
+          cp $TASKS_FILE $TASKS_FILE.bak
+
+          # Delete all the tasks expect the first two tasks (building the node image).
+          yq -i '.tasks |= .[0:2]' $TASKS_FILE
+          cat $TASKS_FILE
+
+          # Build the node image.
+          kinder test workflow $WORKFLOW --verbose
+
+      - name: Amend the node image
+        run: |
+          #!/bin/bash
+
+          set -o errexit
+          set -o nounset
+          set -o pipefail
+          set -o xtrace
+
+          cd ~/go/src/k8s.io/kubeadm/kinder
+
+          WORKFLOW=./ci/workflows/"${{ github.event.inputs.kinder_workflow }}"
+          TASKS_FILE=./ci/workflows/$(cat $WORKFLOW | yq '.tasks[0].import')
+
+          # Get the upgrade dir by checking the upgrade flag value.
+          UPGRADE_VER=$(kinder test workflow $WORKFLOW --dry-run \
+            | grep -oP '(?<=--with-upgrade-artifacts=)[^\s]+' || true)
+
+          # Get the image from the workflow.
+          IMAGE=$(yq '.vars.image' $TASKS_FILE)
+
+          # Bake a simple Dockerfile to update the kubeadm binary.
+          echo "FROM ${IMAGE}" > Dockerfile
+
+          # Add the init version of kubeadm.
+          if [ "${{ github.event.inputs.use_init }}" == "true" ]; then
+            echo "COPY kubeadm /usr/bin/kubeadm" >> Dockerfile
+          fi
+
+          # Even if 'use_upgrade' is checked, this workflow must support upgrade.
+          if [ "${{ github.event.inputs.use_upgrade }}" == "true" ] && [ -n $UPGRADE_VER ]; then
+            echo "COPY kubeadm /kinder/upgrade/$UPGRADE_VER/kubeadm" >> Dockerfile
+          fi
+
+          cat ./Dockerfile
+
+          # Amend the image.
+          docker build -t $IMAGE .
+
+      - name: Run the remaining tasks
+        run: |
+          #!/bin/bash
+
+          set -o errexit
+          set -o nounset
+          set -o pipefail
+          set -o xtrace
+
+          cd ~/go/src/k8s.io/kubeadm/kinder
+
+          WORKFLOW=./ci/workflows/"${{ github.event.inputs.kinder_workflow }}"
+          TASKS_FILE=./ci/workflows/$(cat $WORKFLOW | yq '.tasks[0].import')
+
+          # Copy from the tasks file backup.
+          cp -f $TASKS_FILE.bak $TASKS_FILE
+
+          # Delete the first two tasks (building the node image).
+          yq -i '.tasks |= .[2:]' $TASKS_FILE
+          cat $TASKS_FILE
+
+          # Run the remaining tasks.
+          kinder test workflow $WORKFLOW --verbose
