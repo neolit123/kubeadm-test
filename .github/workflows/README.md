@@ -1,5 +1,18 @@
 ## Workflows
 
+### k8s-test-pr.yaml
+
+Can be used to test a kubernetes/kubernetes PR number (param),
+by building kubeadm from the PR and adding this kubeadm binary
+to a kinder node image. Then running a specific kinder workflow
+(param) from the list of workflows at kubernetes/kubeadm.
+
+Should be triggered from the GitHub Actions section of this repository.
+
+_Below are various experimental workflows that were used
+around the topic of extracting kubeadm to the kubernetes/kubeadm
+repository._
+
 ### k8s-repo-ff.yaml
 
 This is a chron job that runs the `k8s-repo-ff` tool on a daily schedule.
