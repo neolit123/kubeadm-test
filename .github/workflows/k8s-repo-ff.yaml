@@ -2,8 +2,8 @@ name: k8s-repo-ff
 on:
   repository_dispatch:
     types: dispatch-k8s-repo-ff
-  schedule:
-    - cron: '0 10 * * *'
+  # schedule:
+  #   - cron: '0 10 * * *'
 jobs:
   k8s-repo-ff:
     runs-on: ubuntu-18.04
