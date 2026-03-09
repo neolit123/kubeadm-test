@@ -86,13 +86,20 @@ jobs:
           set -o xtrace
 
           # Check what go version to use from k/k.
-          GO_VERSION=$(curl -s https://raw.githubusercontent.com/kubernetes/kubernetes/refs/heads/master/build/dependencies.yaml \
-            | yq '.dependencies[] | select(.name == "golang: upstream version").version')
+          # Prefer the exact patch version from .go-version.
+          GO_VERSION=$(curl -fsSL https://raw.githubusercontent.com/kubernetes/kubernetes/refs/heads/master/.go-version | xargs || true)
+
+          if [ -z "$GO_VERSION" ]; then
+            echo "Failed to detect Go version from kubernetes/kubernetes (.go-version or build/dependencies.yaml)" >&2
+            exit 1
+          fi
 
           cd ~
           GO_TAR="go${GO_VERSION}.linux-amd64.tar.gz"
           GO_URL="https://go.dev/dl/${GO_TAR}"
-          curl -LO "${GO_URL}"
+
+          curl -fL --retry 5 --retry-delay 2 --retry-connrefused -o "${GO_TAR}" "${GO_URL}"
+
           sudo rm -rf /usr/local/go
           sudo tar -C /usr/local -xzf "${GO_TAR}"
           echo "export PATH=/usr/local/go/bin:\$PATH" >> ~/.profile
