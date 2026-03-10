@@ -86,8 +86,8 @@ jobs:
           set -o xtrace
 
           # Check what go version to use from k/k.
-          GO_VERSION=$(curl -s https://raw.githubusercontent.com/kubernetes/kubernetes/refs/heads/master/build/dependencies.yaml \
-            | yq '.dependencies[] | select(.name == "golang: upstream version").version')
+          # Prefer the exact patch version from .go-version.
+          GO_VERSION=$(curl -fsSL https://raw.githubusercontent.com/kubernetes/kubernetes/refs/heads/master/.go-version)
 
           cd ~
           GO_TAR="go${GO_VERSION}.linux-amd64.tar.gz"
