@@ -303,7 +303,7 @@ jobs:
 
       - name: Upload the logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: kinder-logs-${{ github.run_id }}
           path: /home/runner/go/src/k8s.io/kubeadm/kinder/kinder-test-workflow*
